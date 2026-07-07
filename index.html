@@ -159,6 +159,18 @@
   #levelup .lu-s{font-size:14px; color:var(--text); margin-top:6px;}
   .xpfloat{position:fixed; z-index:55; font-weight:900; color:var(--amber); font-size:20px; pointer-events:none; animation:xpUp 1s ease forwards; text-shadow:0 2px 6px #000;}
   @keyframes xpUp{0%{opacity:0; transform:translateY(0) scale(.6)}20%{opacity:1}100%{opacity:0; transform:translateY(-60px) scale(1.1)}}
+  /* ===== 演習モーダル ===== */
+  .modal{position:fixed; inset:0; z-index:70; background:rgba(8,12,20,.88); display:none; align-items:flex-start; justify-content:center; padding:calc(env(safe-area-inset-top) + 20px) 12px 40px; overflow-y:auto;}
+  .modal-card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; max-width:620px; width:100%; animation:fade .25s ease;}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:16px;}
+  .mclose{cursor:pointer; font-size:20px; color:var(--sub); padding:2px 8px;}
+  .passage{background:var(--card2); border-radius:10px; padding:14px; font-size:14px; line-height:1.9; margin-bottom:14px;}
+  .qblock{margin-bottom:16px;}
+  .qq{font-size:14px; font-weight:700; margin-bottom:8px; line-height:1.5;}
+  .qchoice{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:11px 12px; margin-bottom:7px; font-size:14px; cursor:pointer; transition:.15s;}
+  .qchoice:active{transform:scale(.99);}
+  .qchoice.correct{background:#17311f; border-color:var(--green); color:#a8e8cc;}
+  .qchoice.wrong{background:#331717; border-color:var(--red); color:#f5b0b0;}
 </style>
 </head>
 <body>
@@ -196,7 +208,12 @@
       <h2>今日のメニュー <span class="tag" id="dayLabel"></span></h2>
       <div id="banners"></div>
       <div id="taskList"></div>
-      <p style="font-size:11px; color:var(--sub); margin-top:8px;">全部やると相棒が育ち、🎟が1枚もらえる。忙しい日は⚡最低ラインだけでもOK。</p>
+      <p style="font-size:11px; color:var(--sub); margin-top:8px;">タップして実際にやると自動で完了になります(自己申告なし)。全部やると相棒が育ち🎟が1枚もらえる。</p>
+      <div class="row" style="margin-top:8px; gap:6px;">
+        <button class="btn ghost sm" onclick="openPractice('reading')">＋読解</button>
+        <button class="btn ghost sm" onclick="openPractice('listening')">＋リスニング</button>
+        <button class="btn ghost sm" onclick="openPractice('mock')">＋模試</button>
+      </div>
     </div>
   </div>
 
@@ -323,6 +340,8 @@
   </div>
 </main>
 
+<div id="modal" class="modal"></div>
+
 <nav>
   <button class="active" data-pane="home" onclick="switchTab(this)"><span class="ic">🏠</span>ホーム</button>
   <button data-pane="vocab" onclick="switchTab(this)"><span class="ic">🃏</span>単語</button>
@@ -352,7 +371,7 @@ function initS(){
   S.checks=S.checks||{}; S.cards=S.cards||{}; S.writings=S.writings||[]; S.weak=S.weak||[];
   S.coins=S.coins||0; S.shields=S.shields||0; S.shieldUsed=S.shieldUsed||{};
   S.coinDays=S.coinDays||{}; S.milestones=S.milestones||{};
-  S.xp=S.xp||0; S.xpDays=S.xpDays||{}; S.petName=S.petName||"モジャ"; S.sound=(S.sound!==false);
+  S.xp=S.xp||0; S.xpDays=S.xpDays||{}; S.cardCount=S.cardCount||{}; S.petName=S.petName||"モジャ"; S.sound=(S.sound!==false);
   S.reminder=S.reminder||null; S.firstDay=S.firstDay||null;
   // 新: コレクション / 装備
   S.owned=S.owned||{sp_blob:1}; S.owned.sp_blob=S.owned.sp_blob||1;
@@ -371,15 +390,15 @@ function addDays(s,n){const d=parseD(s); d.setDate(d.getDate()+n); return fmtD(d
 
 /* ========== 曜日メニュー ========== */
 const WEEK={
- 0:{name:"日 · 回復日",rest:true,tasks:[{id:"rev",n:"週次振り返り:正答率を記録し来週の重点を決める",t:"20分"},{id:"v",n:"単語:間違いカードのみ軽く回転",t:"20分"}]},
- 1:{name:"月 · 単語+聴解",tasks:[{id:"v",n:"単語フラッシュカード(復習+新規)",t:"30分"},{id:"l",n:"リスニング1パッセージ+シャドーイング",t:"30分"}]},
- 2:{name:"火 · 読解",tasks:[{id:"r",n:"長文1題を時間計測(12分以内)",t:"40分"},{id:"v",n:"単語カード消化",t:"20分"}]},
- 3:{name:"水 · 作文",tasks:[{id:"w",n:"意見論述or要約を1本(計測)",t:"40分"},{id:"v",n:"単語カード消化",t:"20分"}]},
- 4:{name:"木 · 聴解",tasks:[{id:"l",n:"リスニングPart2×1+Part1×3 先読み",t:"40分"},{id:"v",n:"単語カード消化",t:"20分"}]},
- 5:{name:"金 · 弱点強化",tasks:[{id:"x",n:"今週の弱点技能に集中(記録タブで設定)",t:"45分"},{id:"v",n:"単語カード消化",t:"20分"}]},
- 6:{name:"土 · 実戦",tasks:[{id:"p",n:"過去問を本番時間で通し→採点→間違い分析",t:"120分"},{id:"w",n:"書いた作文を模範解答と比較",t:"20分"}]}
+ 0:{name:"日 · 回復日",rest:true,tasks:[{id:"rev",n:"週次ふりかえりを記録する",t:"タップ"},{id:"v",n:"単語カードを軽く回す",t:"タップ"}]},
+ 1:{name:"月 · 単語+聴解",tasks:[{id:"v",n:"単語カードを進める",t:"タップ"},{id:"l",n:"リスニング問題を解く",t:"タップ"}]},
+ 2:{name:"火 · 読解",tasks:[{id:"r",n:"読解問題を解く",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
+ 3:{name:"水 · 作文",tasks:[{id:"w",n:"作文を1本書いて提出",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
+ 4:{name:"木 · 聴解",tasks:[{id:"l",n:"リスニング問題を解く",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
+ 5:{name:"金 · 弱点強化",tasks:[{id:"r",n:"読解問題を解く",t:"タップ"},{id:"l",n:"リスニング問題を解く",t:"タップ"}]},
+ 6:{name:"土 · 実戦(模試)",tasks:[{id:"p",n:"模試ミニ(5問)に挑戦",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]}
 };
-const MIN_TASK={id:"min",n:"⚡最低ライン:単語30分だけ",t:"忙しい日はこれだけでOK"};
+const MIN_TASK={id:"min",n:"⚡最低ライン:単語カード5枚だけ",t:"忙しい日はこれだけでOK"};
 function menuFor(dateStr){const w=WEEK[parseD(dateStr).getDay()]; return{name:w.name,tasks:w.tasks,rest:!!w.rest};}
 
 /* ========== XP / レベル ========== */
@@ -558,11 +577,11 @@ function renderHome(){
   const checks=S.checks[today()]||[];
   const tasks=[...info.tasks,MIN_TASK];
   document.getElementById("taskList").innerHTML=tasks.map(t=>{
-    const done=checks.includes(t.id); const xp=t.id==="min"?XP.min:XP.task;
-    return `<div class="task ${done?"done":""} ${t.id==="min"?"min-line":""}" onclick="toggleTask('${t.id}',event)">
-      <div class="cb">${done?"✓":""}</div>
-      <div style="flex:1"><div class="t-name">${t.n}</div><div class="t-time">${t.t}</div></div>
-      ${done?"":`<div class="xpget">+${xp}XP</div>`}</div>`;
+    const done=checks.includes(t.id);
+    return `<div class="task ${done?"done":""} ${t.id==="min"?"min-line":""}" onclick="taskAction('${t.id}')">
+      <div class="cb">${done?"✓":"▶"}</div>
+      <div style="flex:1"><div class="t-name">${t.n}</div><div class="t-time">${done?"できた!":"タップして挑戦"}</div></div>
+      ${done?'<div class="xpget">✓ 完了</div>':'<div class="xpget">やる ▶</div>'}</div>`;
   }).join("");
   const coreDone=info.tasks.filter(t=>checks.includes(t.id)).length;
   if(coreDone===info.tasks.length && !S.coinDays[today()]){ S.coinDays[today()]=1; S.coins++; save(); }
@@ -613,15 +632,28 @@ function levelUp(lv){ const st=petStage(lv); beep(880,.12); setTimeout(()=>beep(
   const evolved=lv===3||lv===6||lv===11||lv===17||lv===25;
   document.getElementById("luS").textContent=evolved?`🌟 ${S.petName}が「${STAGE_NAME[st]}」に成長した!`:`${S.petName}がよろこんでいる`;
   box.style.display="flex"; renderBuddyView("happy"); setTimeout(()=>{box.style.display="none"; renderHome();},1900); }
-function toggleTask(id,ev){
-  const key=today(); S.checks[key]=S.checks[key]||[]; const i=S.checks[key].indexOf(id);
-  const xp=id==="min"?XP.min:XP.task; const xy=ev?{x:ev.clientX,y:ev.clientY}:null;
-  if(i>=0){ S.checks[key].splice(i,1); S.xp=Math.max(0,S.xp-xp); const bi=S.checks[key].indexOf("_bonus");
-    if(bi>=0 && menuFor(key).tasks.filter(t=>S.checks[key].includes(t.id)).length<menuFor(key).tasks.length){ S.checks[key].splice(S.checks[key].indexOf("_bonus"),1); S.xp=Math.max(0,S.xp-XP.allBonus);} save(); renderHome(); }
-  else{ S.checks[key].push(id); beep(720,.05); vibe(12);
-    const info=menuFor(key); const coreDone=info.tasks.filter(t=>S.checks[key].includes(t.id)).length; let gain=xp;
-    if(id!=="min" && coreDone===info.tasks.length && !S.checks[key].includes("_bonus")){ S.checks[key].push("_bonus"); gain+=XP.allBonus; confetti(60); }
-    save(); addXP(gain,xy); renderHome(); }
+function goTab(p){document.querySelector('nav button[data-pane="'+p+'"]').click();}
+function taskAction(id){
+  if(id==="v"||id==="min"){ goTab("vocab"); return; }
+  if(id==="w"){ goTab("write"); return; }
+  if(id==="l"){ openPractice("listening"); return; }
+  if(id==="r"){ openPractice("reading"); return; }
+  if(id==="p"){ openPractice("mock"); return; }
+  if(id==="rev"){ openReflection(); return; }
+}
+// 実際に活動をやり切ったときだけ完了になる(自己申告なし)
+function completeTask(id, xp){
+  const key=today(); S.checks[key]=S.checks[key]||[];
+  if(S.checks[key].includes(id)) return false;
+  S.checks[key].push(id);
+  let gain=(xp==null?XP.task:xp);
+  const info=menuFor(key);
+  if(info.tasks.some(t=>t.id===id)){
+    const coreDone=info.tasks.filter(t=>S.checks[key].includes(t.id)).length;
+    if(coreDone===info.tasks.length && !S.checks[key].includes("_bonus")){ S.checks[key].push("_bonus"); gain+=XP.allBonus; }
+  }
+  save(); confetti(gain>=XP.allBonus?80:40); beep(760,.06); vibe(15); addXP(gain,null); renderHome();
+  return true;
 }
 
 /* ========== 演出 ========== */
@@ -695,7 +727,8 @@ function renderFlash(){ buildQueue(); const due=queue.filter(i=>S.cards[i]).leng
   document.getElementById("dueCount").textContent=due; document.getElementById("newCount").textContent=queue.length-due;
   document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(c=>c.iv>=4).length; nextCard(); }
 function nextCard(){ document.getElementById("fcBtns").style.display="none"; document.getElementById("fcMeaning").style.display="none";
-  if(queue.length===0){ document.getElementById("flashCard").style.display="none"; document.getElementById("fcDone").style.display="block"; curCard=null; return; }
+  if(queue.length===0){ document.getElementById("flashCard").style.display="none"; document.getElementById("fcDone").style.display="block"; curCard=null;
+    if((S.cardCount[today()]||0)>=1){ completeTask("v"); completeTask("min", XP.min); } return; }
   document.getElementById("flashCard").style.display="flex"; document.getElementById("fcDone").style.display="none";
   curCard=queue[0]; const v=VOCAB[curCard]; document.getElementById("fcWord").textContent=v[0]; document.getElementById("fcPos").textContent=v[2];
   document.getElementById("fcMeaning").textContent=v[1]; document.getElementById("fcHint").style.display="block"; }
@@ -703,7 +736,10 @@ function flipCard(){ if(curCard===null)return; document.getElementById("fcMeanin
 function rateCard(rate){ const t=today(); let c=S.cards[curCard]||{iv:0,added:t};
   if(rate===0){c.iv=0; queue.push(curCard);} else if(rate===1){c.iv=Math.max(1,c.iv);} else{c.iv=Math.min(INTERVALS.length-1,c.iv+1);}
   c.due=addDays(t,INTERVALS[c.iv]); S.cards[curCard]=c;
+  S.cardCount[t]=(S.cardCount[t]||0)+1;
   if(rate>0 && (S.xpDays["card_"+t]||0)<40){ S.xpDays["card_"+t]=(S.xpDays["card_"+t]||0)+XP.card; addXP(XP.card,null); } else save();
+  if(S.cardCount[t]>=5) completeTask("min", XP.min);
+  if(S.cardCount[t]>=10) completeTask("v");
   queue.shift(); document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(x=>x.iv>=4).length; beep(700,.04); nextCard(); }
 function extraNew(){extraAllowance+=10; renderFlash();}
 
@@ -743,7 +779,8 @@ function saveWriting(){ const txt=document.getElementById("writeArea").value.tri
   const mode=document.getElementById("writeMode").value; const n=txt.split(/\s+/).length;
   S.writings.unshift({d:today(),mode:mode==="essay"?"意見論述":"要約",words:n,topic:mode==="essay"?ESSAYS[curEssay][0]:"要約練習"}); S.writings=S.writings.slice(0,30); save();
   document.getElementById("writeArea").value=""; updateWC(); resetWriteTimer(); renderWriteHist(); addXP(XP.write,null); confetti(40);
-  alert("記録しました!模範解答と比べて、使えなかった表現を3つメモすると効果大。"); }
+  completeTask("w");
+  alert("記録しました!今日の『作文』が完了になりました。模範解答と比べて、使えなかった表現を3つメモすると効果大。"); }
 function renderWriteHist(){ const el=document.getElementById("writeHist"); if(S.writings.length===0){el.innerHTML='<p style="font-size:12px;color:var(--sub)">まだ記録がありません</p>';return;}
   el.innerHTML=S.writings.map(w=>`<div class="hist-item">${w.d} <b>${w.mode}</b> ${w.words}語 — ${w.topic}</div>`).join(""); }
 
@@ -837,6 +874,111 @@ function wtap(id){ const it=ITEM[id]; const slot=equipSlot(it.cat); const owned=
     else { alert(`✨かけらが足りません(必要${cost} / 所持${S.shards})。ダブりを引くと貯まります。`); }
   }
 }
+
+/* ========== 演習コンテンツ(オリジナル) ========== */
+const READINGS=[
+ {passage:"When many companies switched to remote work, employees welcomed the freedom to manage their own schedules. However, some managers soon noticed a hidden problem. Without casual conversations in the office, new staff found it harder to ask small questions, and their training slowed down. To solve this, several firms now hold short online meetings each morning. These meetings are not meant to check productivity, but to give younger workers a chance to stay connected and learn from experienced colleagues.",
+  q:[{q:"What problem did some managers notice?",choices:["New employees learned more slowly.","Workers refused to attend meetings.","Productivity became impossible to measure.","Employees demanded higher salaries."],a:0},
+     {q:"Why do the firms hold morning meetings?",choices:["To check how much work is done","To help newer workers stay connected","To reduce the number of employees","To replace office buildings"],a:1}]},
+ {passage:"In many large cities, unused rooftops are being turned into small farms. Supporters say that growing vegetables close to where people live reduces the distance food must travel, which lowers pollution from transportation. Rooftop gardens can also keep buildings cooler in summer. Critics, however, point out that these farms produce only a tiny amount of food and cannot feed a whole city. Still, many residents value them as green spaces that bring neighbors together.",
+  q:[{q:"One benefit of rooftop farms mentioned is that they",choices:["make buildings warmer","reduce transportation pollution","increase city populations","replace public parks"],a:1},
+     {q:"What do critics argue?",choices:["The farms are too expensive to build.","The farms produce very little food.","Residents dislike the farms.","The farms harm local wildlife."],a:1}]},
+ {passage:"Scientists have long known that sleep helps the body rest, but recent research suggests it also cleans the brain. During deep sleep, the spaces between brain cells widen, allowing fluid to wash away waste that builds up while we are awake. Some of this waste is linked to memory problems in older adults. Researchers hope that by understanding this process, they may one day find better ways to protect the brain as people age.",
+  q:[{q:"According to recent research, deep sleep helps the brain by",choices:["producing new brain cells","removing waste between cells","slowing the heartbeat","raising body temperature"],a:1},
+     {q:"Why is this research important?",choices:["It may help protect the brain in old age.","It proves people need less sleep.","It explains why we dream.","It shows sleep is unnecessary."],a:0}]},
+ {passage:"Although many people carefully separate their plastic waste, only a small part of it is actually recycled. Different types of plastic must be processed in different ways, and mixing them makes recycling difficult and expensive. As a result, a large amount ends up being burned or buried. Some experts argue that the best solution is not better recycling but simply using less plastic in the first place, for example by choosing reusable containers.",
+  q:[{q:"Why is much plastic not recycled?",choices:["People refuse to separate it.","Different types are hard to process together.","Recycling is illegal in some cities.","There are no recycling factories."],a:1},
+     {q:"What solution do some experts prefer?",choices:["Burning more plastic","Using less plastic","Building larger landfills","Importing plastic from abroad"],a:1}]},
+ {passage:"Digital tutoring programs that use artificial intelligence are becoming common in schools. These programs can adjust to each student's level, offering easier questions to those who struggle and harder ones to those who advance quickly. Teachers say this allows them to spend more time helping individuals. Yet some worry that students may rely too heavily on instant answers and lose the patience needed for difficult problems. Balancing technology and traditional learning remains a challenge.",
+  q:[{q:"One advantage of AI tutoring programs is that they",choices:["adjust to each student's level","remove the need for teachers","are completely free","only give hard questions"],a:0},
+     {q:"What concern is mentioned?",choices:["Students may become too dependent on quick answers.","Teachers will lose their jobs.","The programs are too slow.","Schools cannot afford computers."],a:0}]},
+ {passage:"National parks were created to protect nature and let people enjoy it. In recent years, however, some famous parks have become so popular that crowds damage the very landscapes visitors come to see. Footpaths widen, plants are trampled, and wildlife is disturbed. To manage this, several parks now require visitors to book their entry in advance. While some tourists dislike the extra step, park officials say limiting numbers is the only way to keep these places healthy for the future.",
+  q:[{q:"What problem do popular national parks face?",choices:["Too few visitors","Crowds damaging the landscape","A lack of wild animals","Rising ticket prices"],a:1},
+     {q:"How are some parks responding?",choices:["By building more roads","By requiring advance booking","By lowering entry fees","By closing permanently"],a:1}]}
+];
+const LISTENINGS=[
+ {script:"Attention, library visitors. Please note that the third-floor reading room will be closed this weekend for cleaning. All study desks on that floor will be unavailable from Friday evening until Monday morning. If you need a quiet place to study, the reading area on the first floor will remain open as usual, and extra seats have been added there. We apologize for any inconvenience.",
+  q:[{q:"Why will the third-floor reading room be closed?",choices:["For cleaning","For a book sale","For a meeting","For roof repairs"],a:0},
+     {q:"What can visitors do instead?",choices:["Use the first-floor reading area","Study outside the building","Come back next month","Reserve a room online"],a:0}]},
+ {script:"A: Good morning. What can I get for you? B: Hi, I'd like a medium coffee, please. A: Sure. Would you like anything to eat with that? We have fresh muffins this morning. B: Oh, that sounds good. I'll take a blueberry muffin too. A: Great. That'll be four dollars fifty. For here or to go? B: To go, please. I'm in a bit of a hurry.",
+  q:[{q:"What does the woman order to eat?",choices:["A blueberry muffin","A sandwich","Nothing to eat","A slice of cake"],a:0},
+     {q:"Will she stay or leave?",choices:["She will take the order to go.","She will eat in the cafe.","She will come back later.","She will cancel the order."],a:0}]},
+ {script:"This is an announcement for passengers traveling on the afternoon express to Riverside. Due to strong winds along the coast, the two o'clock train will be delayed by about forty minutes. Passengers who cannot wait may use the local line, which is running on schedule, though it makes more stops. We expect the express service to return to normal by this evening. Please listen for further announcements.",
+  q:[{q:"Why is the express train delayed?",choices:["Strong winds","A mechanical problem","Too many passengers","Track repairs"],a:0},
+     {q:"What alternative is suggested?",choices:["Taking the local line","Waiting until tomorrow","Getting a refund","Driving instead"],a:0}]},
+ {script:"Welcome, everyone, to the city history museum. Before we begin our tour, a few reminders. Photography is allowed in most rooms, but please turn off your flash, as it can damage the older paintings. The tour will last about ninety minutes, and there will be a short break halfway through near the cafe. If you have questions during the tour, feel free to ask at any time.",
+  q:[{q:"What are visitors asked not to use?",choices:["Flash photography","Mobile phones","Backpacks","Pens"],a:0},
+     {q:"How long will the tour last?",choices:["About ninety minutes","About thirty minutes","All day","Two hours"],a:0}]},
+ {script:"A: Hi, I'm interested in joining the gym. Could you tell me about the plans? B: Of course. We have a monthly plan and a yearly plan. The yearly one is cheaper if you plan to come regularly. A: Does the membership include the swimming pool? B: The basic plan doesn't, but you can add pool access for a small extra fee. A: Okay, I'll start with the monthly basic plan and think about the pool later.",
+  q:[{q:"Why is the yearly plan recommended for regular visitors?",choices:["It is cheaper over time.","It includes free meals.","It has no daily time limit.","It comes with a trainer."],a:0},
+     {q:"What does the man decide?",choices:["The monthly basic plan","The yearly plan with pool","Not to join","A one-day pass"],a:0}]},
+ {script:"Thank you all for coming to today's volunteer meeting. This Saturday, we'll be cleaning up the riverbank near the park. Please wear comfortable clothes and shoes that can get dirty. We'll provide gloves and bags, so you don't need to bring your own. The work starts at nine in the morning and should finish by noon. Afterward, there will be free sandwiches and drinks for all volunteers as a thank-you.",
+  q:[{q:"What will the volunteers do on Saturday?",choices:["Clean up the riverbank","Plant trees in the park","Paint a building","Collect donations"],a:0},
+     {q:"What will volunteers receive afterward?",choices:["Free sandwiches and drinks","A small payment","A certificate","A T-shirt"],a:0}]}
+];
+const MOCKQS=[
+ {q:"The government finally decided to ___ the outdated law.",choices:["accumulate","exaggerate","abolish","hesitate"],a:2},
+ {q:"This hotel can ___ up to five hundred guests.",choices:["condemn","accommodate","distort","neglect"],a:1},
+ {q:"Over the years, she managed to ___ a large amount of savings.",choices:["abolish","deceive","provoke","accumulate"],a:3},
+ {q:"The new medicine helped to ___ his pain.",choices:["alleviate","intimidate","exaggerate","postpone"],a:0},
+ {q:"We must ___ the risks before making a decision.",choices:["deceive","abolish","assess","distract"],a:2},
+ {q:"Regular exercise can ___ your ability to concentrate.",choices:["hinder","enhance","condemn","discard"],a:1},
+ {q:"Heavy snow may ___ the construction work.",choices:["enhance","cultivate","endorse","hinder"],a:3},
+ {q:"The reporter tried to ___ the message clearly to readers.",choices:["convey","abolish","exaggerate","evacuate"],a:0},
+ {q:"The company offered bonuses to ___ workers to stay.",choices:["condemn","induce","hinder","distort"],a:1},
+ {q:"The proposal received careful ___ before it was approved.",choices:["fatigue","surplus","scrutiny","remedy"],a:2},
+ {q:"A balanced diet provides the ___ your body needs.",choices:["obligation","prejudice","deficit","nutrition"],a:3},
+ {q:"After long talks, the two sides reached a ___.",choices:["consensus","catastrophe","famine","pension"],a:0},
+ {q:"Rising prices are often a sign of ___.",choices:["autonomy","inflation","sanitation","warranty"],a:1},
+ {q:"He has a strong ___ against trying unfamiliar food.",choices:["remedy","revenue","prejudice","census"],a:2},
+ {q:"The disease spread quickly and became an ___.",choices:["incentive","obligation","initiative","epidemic"],a:3},
+ {q:"Solar power is an ___ source of clean energy.",choices:["abundant","obsolete","fragile","tedious"],a:0},
+ {q:"Smoking can have ___ effects on your health.",choices:["adequate","adverse","durable","coherent"],a:1},
+ {q:"Wearing a seatbelt is ___ in this country.",choices:["ambiguous","lucrative","compulsory","redundant"],a:2}
+];
+
+/* ========== 演習エンジン(モーダル) ========== */
+let quizState=null;
+function openPractice(kind){
+  let ctx=null, qs=[];
+  if(kind==="reading"){ const p=READINGS[Math.floor(Math.random()*READINGS.length)]; ctx={type:"text",text:p.passage}; qs=p.q; }
+  else if(kind==="listening"){ const p=LISTENINGS[Math.floor(Math.random()*LISTENINGS.length)]; ctx={type:"audio",text:p.script}; qs=p.q; }
+  else { qs=[...MOCKQS].sort(()=>Math.random()-0.5).slice(0,5); }
+  quizState={kind,qs,ctx,answered:0,correct:0,picked:{},showScript:false};
+  document.getElementById("modal").style.display="flex";
+  renderQuiz();
+  if(kind==="listening")setTimeout(()=>speakScript(ctx.text),400);
+}
+function closeModal(){ document.getElementById("modal").style.display="none"; try{speechSynthesis.cancel();}catch(e){} }
+function speakScript(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text.replace(/A:|B:/g,". ")); u.lang="en-US"; u.rate=0.92; speechSynthesis.speak(u);}catch(e){ quizState.showScript=true; renderQuiz(); } }
+function renderQuiz(){
+  const q=quizState; const label=q.kind==="reading"?"読解":q.kind==="listening"?"リスニング":"模試ミニ";
+  let h=`<div class="modal-card"><div class="modal-head"><b>${label}</b><span class="mclose" onclick="closeModal()">✕</span></div>`;
+  if(q.ctx){
+    if(q.ctx.type==="text") h+=`<div class="passage">${q.ctx.text}</div>`;
+    else h+=`<div class="center" style="margin-bottom:14px"><button class="btn" onclick="speakScript(quizState.ctx.text)">🔊 音声を再生</button> <button class="btn ghost sm" onclick="quizState.showScript=!quizState.showScript;renderQuiz()">${q.showScript?"英文を隠す":"英文を見る"}</button>${q.showScript?`<div class="passage" style="margin-top:10px;text-align:left">${q.ctx.text}</div>`:""}</div>`;
+  }
+  q.qs.forEach((qq,qi)=>{
+    h+=`<div class="qblock"><div class="qq">Q${qi+1}. ${qq.q}</div>`;
+    qq.choices.forEach((c,ci)=>{ let cls="qchoice"; const picked=q.picked[qi];
+      if(picked!=null){ if(ci===qq.a)cls+=" correct"; else if(ci===picked)cls+=" wrong"; }
+      h+=`<div class="${cls}" onclick="pickAns(${qi},${ci})">${String.fromCharCode(65+ci)}. ${c}</div>`; });
+    h+=`</div>`;
+  });
+  if(q.answered>=q.qs.length){ h+=`<div class="center" style="margin-top:6px"><p style="font-weight:800;margin-bottom:10px">結果: ${q.correct} / ${q.qs.length} 正解 🎉</p><button class="btn green" style="width:100%" onclick="finishQuiz()">完了する</button></div>`; }
+  h+=`</div>`;
+  document.getElementById("modal").innerHTML=h;
+}
+function pickAns(qi,ci){ const q=quizState; if(q.picked[qi]!=null)return; q.picked[qi]=ci; q.answered++;
+  if(ci===q.qs[qi].a){q.correct++; beep(760,.05);} else beep(300,.08); vibe(8); renderQuiz(); }
+function finishQuiz(){ const kind=quizState.kind; const id=kind==="reading"?"r":kind==="listening"?"l":"p";
+  const already=(S.checks[today()]||[]).includes(id); closeModal();
+  if(!completeTask(id, 15) && already){ addXP(6,null); } // 追加演習のごほうび
+  goTab("home"); }
+function openReflection(){
+  const v=prompt("今週いちばん強化したい技能は？\n(単語 / 読解 / リスニング / ライティング / スピーキング)","単語");
+  if(!v)return; S.weak.unshift({d:today(),s:v.trim()}); S.weak=S.weak.slice(0,10); save();
+  completeTask("rev"); renderWeak(); alert("記録しました!今日の『ふりかえり』が完了です。来週はそこを重点的に。"); }
 
 /* ========== リマインド ========== */
 function renderRemStatus(){ const el=document.getElementById("remStatus"); let s="";
