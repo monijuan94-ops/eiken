@@ -275,9 +275,10 @@
       <h2>ガチャ</h2>
       <div class="gstage" id="gachaStage"><span class="cap">🎁</span></div>
       <div class="gacha-res" id="gachaRes"></div>
-      <div class="luckbar" id="luckBar"></div>
-      <button class="btn amber" id="gachaBtn" onclick="pullGacha()">1回引く</button>
-      <p style="font-size:11px; color:var(--sub); margin-top:8px;" id="pityTxt"></p>
+      <div id="ticketInfo" style="font-size:18px; font-weight:800; margin:4px 0 8px;"></div>
+      <button class="btn amber" id="gachaBtn" onclick="pullGacha()" style="font-size:16px; padding:14px 30px;">🎁 1回引く</button>
+      <div id="gachaHelp" style="font-size:13px; color:var(--sub); margin-top:12px; line-height:1.7;"></div>
+      <details style="margin-top:10px; text-align:left;"><summary style="font-size:11px; color:var(--sub); cursor:pointer;">確率のくわしい説明</summary><p style="font-size:11px; color:var(--sub); margin-top:6px; line-height:1.7;" id="pityTxt"></p></details>
     </div>
     <div class="card">
       <h2>きせかえ / コレクション <span class="tag" id="colStat"></span></h2>
@@ -782,18 +783,26 @@ function pullGacha(){
 let wardCat="species";
 const CATLABEL={species:"相棒",hat:"ぼうし",acc:"アクセ",bg:"はいけい",effect:"エフェクト"};
 function renderGacha(){
-  document.getElementById("gachaBtn").disabled=S.coins<1;
-  document.getElementById("gachaBtn").textContent=`1回引く(所持 🎟${S.coins})`;
+  const coins=S.coins;
+  document.getElementById("ticketInfo").innerHTML=`🎟 ガチャ券 <span style="color:var(--amber)">${coins}</span> 枚`;
+  const btn=document.getElementById("gachaBtn");
+  btn.disabled=coins<1;
+  btn.textContent=coins>=1?"🎁 1回引く（券 -1）":"🎁 引くには券が必要";
   const w=effWeights(); const sum=w.N+w.R+w.SR+w.SSR+w.UR; const ssr=((w.SSR+w.UR)/sum*100).toFixed(1);
-  const ls=luckScore();
-  document.getElementById("luckBar").innerHTML= ls>0? `好調ボーナス発動中🔥 SSR以上 <b>${ssr}%</b>(通常5.5%)｜連続日数と全達成でUP` : `SSR以上 <b>${ssr}%</b>｜今日メニュー全達成＋連続でレア率UP`;
-  document.getElementById("pityTxt").textContent=`天井: あと${Math.max(0,10-S.sinceSR)}回でSR以上確定 / あと${Math.max(0,30-S.sinceSSR)}回でSSR確定`;
+  const help=document.getElementById("gachaHelp");
+  if(coins<1){
+    help.innerHTML=`券は <b style="color:var(--text)">「ホームの今日のメニューを全部やる」と 1枚</b> もらえます。<br>連続日数のボーナスでも増えるよ。<br><button class="btn sm" style="margin-top:8px" onclick="goHome()">▶ 今日のメニューをやりに行く</button>`;
+  }else{
+    help.innerHTML=`ボタンを押すと1回引けます（券が1枚減る）。<br>つづけるほどレアが出やすい✨ 今：SSR以上 <b style="color:var(--amber)">${ssr}%</b>`;
+  }
+  document.getElementById("pityTxt").innerHTML=`・N/R/SR/SSR/UR の5段階。<br>・今日メニュー全達成＋連続日数で SSR以上が最大約12%までUP（今 ${ssr}%）。<br>・あと${Math.max(0,10-S.sinceSR)}回でSR以上が確定、あと${Math.max(0,30-S.sinceSSR)}回でSSRが確定（天井）。<br>・同じものが出たら✨かけらになり、貯めると欲しいアイテムを確定で交換できます。`;
   const owned=ITEMS.filter(i=>!DEFAULT_OWNED.includes(i.id)&&S.owned[i.id]).length;
   document.getElementById("colStat").textContent=`${owned} / ${POOL.length}種`;
   document.getElementById("shieldN2").textContent=S.shields;
   document.getElementById("wtabs").innerHTML=Object.keys(CATLABEL).map(c=>`<div class="wtab ${c===wardCat?"active":""}" onclick="setWardCat('${c}')">${CATLABEL[c]}</div>`).join("");
   renderWardrobe();
 }
+function goHome(){document.querySelector('nav button[data-pane="home"]').click();}
 function setWardCat(c){wardCat=c; renderGacha();}
 function equipSlot(cat){ return cat==="species"?"species":cat==="hat"?"hat":cat==="acc"?"acc":cat==="bg"?"bg":"effect"; }
 function renderWardrobe(){
