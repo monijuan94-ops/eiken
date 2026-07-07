@@ -21,7 +21,7 @@
   html,body{overscroll-behavior:none;}
   body{background:radial-gradient(1200px 600px at 50% -10%,#1b2740 0%,var(--bg) 55%); color:var(--text);
     min-height:100vh; padding-bottom:calc(78px + env(safe-area-inset-bottom));}
-  main{max-width:680px; margin:0 auto; padding:8px 16px;}
+  main{max-width:680px; margin:0 auto; padding:calc(env(safe-area-inset-top) + 16px) 16px 8px;}
   .tab-pane{display:none; animation:fade .25s ease;} .tab-pane.active{display:block;}
   @keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
   .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px;}
@@ -38,8 +38,12 @@
   @keyframes hop{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-20px) scale(1.07,.94)}60%{transform:translateY(0) scale(.97,1.05)}100%{transform:translateY(0) scale(1)}}
   .petwrap.sad .pet-anim{animation:droop 3s ease-in-out infinite; transform-origin:50% 92%;}
   @keyframes droop{0%,100%{transform:rotate(-2deg) translateY(2px)}50%{transform:rotate(2deg)}}
-  .petwrap.legend::after{content:""; position:absolute; inset:-8%; border-radius:50%; z-index:-1;
-    background:radial-gradient(circle,rgba(245,185,66,.4),transparent 62%); animation:pulse 2.6s ease-in-out infinite;}
+  .petwrap::after{content:""; position:absolute; inset:-8%; border-radius:50%; z-index:-1; transition:background .5s;}
+  .petwrap.g2::after{background:radial-gradient(circle,rgba(79,142,247,.16),transparent 60%);}
+  .petwrap.g3::after{background:radial-gradient(circle,rgba(52,201,142,.22),transparent 62%);}
+  .petwrap.g4::after{background:radial-gradient(circle,rgba(157,123,245,.28),transparent 62%); animation:pulse 3s ease-in-out infinite;}
+  .petwrap.g5::after{background:radial-gradient(circle,rgba(245,185,66,.42),transparent 62%); animation:pulse 2.6s ease-in-out infinite;}
+  #petSvg{transition:transform .5s cubic-bezier(.2,1.2,.3,1);}
   @keyframes pulse{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.15);opacity:1}}
   .fxlayer{position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden;}
   .fxp{position:absolute; bottom:-14px; font-size:17px; animation:floatup 3.6s linear infinite; opacity:.85;}
@@ -541,9 +545,10 @@ function pokePet(){ beep(660,.06); vibe(10); const w=document.getElementById("pe
 function renamePet(){ const n=prompt("相棒の名前(12文字まで)",S.petName); if(n&&n.trim()){S.petName=n.trim().slice(0,12); save(); renderHome();} }
 
 function renderBuddyView(mood){
-  const w=document.getElementById("petwrap");
-  w.className="petwrap"+(mood==="happy"?" happy":"")+(mood==="sad"?" sad":"")+(petStage(levelInfo(S.xp).lv)>=5?" legend":"");
-  document.getElementById("petSvg").innerHTML=buddySVG(mood);
+  const w=document.getElementById("petwrap"); const st=petStage(levelInfo(S.xp).lv);
+  w.className="petwrap g"+st+(mood==="happy"?" happy":"")+(mood==="sad"?" sad":"");
+  const sc=[0.82,0.9,0.98,1.04,1.1,1.16][st]||1;
+  const host=document.getElementById("petSvg"); host.style.transform="scale("+sc+")"; host.innerHTML=buddySVG(mood);
   renderBg(); renderEffect();
 }
 function renderHome(){
