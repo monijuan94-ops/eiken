@@ -2,160 +2,178 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1420">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="英検特訓">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>英検準1級 特訓</title>
 <style>
   :root{
-    --bg:#0f1420; --card:#1a2233; --card2:#212b40; --border:#2c3852;
+    --bg:#0f1420; --bg2:#121a2b; --card:#1a2233; --card2:#212b40; --border:#2c3852;
     --text:#e8ecf4; --sub:#94a3bd; --accent:#4f8ef7; --green:#34c98e;
-    --amber:#f5b942; --red:#f26d6d; --purple:#9d7bf5;
+    --amber:#f5b942; --red:#f26d6d; --purple:#9d7bf5; --pink:#f57bb0;
   }
-  *{box-sizing:border-box; margin:0; padding:0; font-family:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;}
-  body{background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:80px;}
-  header{padding:20px 16px 12px; text-align:center;}
-  header h1{font-size:18px; font-weight:700;}
-  header .day{font-size:13px; color:var(--sub); margin-top:4px;}
-  .streak-bar{display:flex; justify-content:center; gap:18px; margin:10px 0 4px;}
-  .streak-item{text-align:center;}
-  .streak-item .num{font-size:24px; font-weight:800; color:var(--accent);}
-  .streak-item .num.fire{color:var(--amber);}
-  .streak-item .lbl{font-size:11px; color:var(--sub);}
-  nav{position:fixed; bottom:0; left:0; right:0; display:flex; background:var(--card); border-top:1px solid var(--border); z-index:10;}
-  nav button{flex:1; background:none; border:none; color:var(--sub); padding:10px 2px 12px; font-size:10px; cursor:pointer;}
-  nav button .ic{display:block; font-size:20px; margin-bottom:2px;}
-  nav button.active{color:var(--accent);}
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;
+    font-family:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;}
+  html,body{overscroll-behavior:none;}
+  body{background:radial-gradient(1200px 600px at 50% -10%,#1b2740 0%,var(--bg) 55%); color:var(--text);
+    min-height:100vh; padding-bottom:calc(78px + env(safe-area-inset-bottom));}
   main{max-width:680px; margin:0 auto; padding:8px 16px;}
-  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px;}
-  .card h2{font-size:15px; margin-bottom:10px;}
-  .card h2 .tag{font-size:11px; font-weight:600; color:var(--sub); margin-left:8px;}
-  .task{display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--card2); border-radius:10px; margin-bottom:8px; cursor:pointer; border:1px solid transparent; transition:.15s;}
-  .task.done{opacity:.55; border-color:var(--green);}
-  .task .cb{width:22px; height:22px; min-width:22px; border-radius:6px; border:2px solid var(--sub); display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;}
-  .task.done .cb{background:var(--green); border-color:var(--green);}
-  .task .t-name{font-size:14px; font-weight:600;}
-  .task .t-time{font-size:11px; color:var(--sub);}
-  .task.min-line{border-style:dashed; border-color:var(--amber);}
-  .progress-wrap{height:8px; background:var(--card2); border-radius:4px; overflow:hidden; margin-top:8px;}
-  .progress-bar{height:100%; background:linear-gradient(90deg,var(--accent),var(--green)); transition:.3s; border-radius:4px;}
-  .btn{background:var(--accent); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:14px; font-weight:700; cursor:pointer;}
-  .btn.ghost{background:var(--card2); color:var(--text); border:1px solid var(--border);}
-  .btn.green{background:var(--green);} .btn.red{background:var(--red);} .btn.amber{background:var(--amber); color:#222;} .btn.sm{padding:8px 12px; font-size:12px;}
-  .btn:disabled{opacity:.4; cursor:default;}
-  .banner{border-radius:10px; padding:10px 14px; font-size:13px; line-height:1.6; margin-bottom:10px; border:1px solid;}
+  .tab-pane{display:none; animation:fade .25s ease;} .tab-pane.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:14px;}
+  .card h2{font-size:15px; margin-bottom:10px;} .card h2 .tag{font-size:11px; font-weight:600; color:var(--sub); margin-left:8px;}
+
+  /* ===== ヒーロー(相棒) ===== */
+  .hero{position:relative; text-align:center; padding:14px 12px 6px; overflow:hidden;}
+  .petwrap{position:relative; width:180px; height:180px; margin:0 auto; cursor:pointer; user-select:none;}
+  .petwrap svg{width:100%; height:100%; display:block; filter:drop-shadow(0 8px 20px rgba(0,0,0,.35));}
+  .pet-anim{animation:breathe 3.2s ease-in-out infinite; transform-origin:50% 90%;}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  .petwrap.happy .pet-anim{animation:hop .6s ease;}
+  @keyframes hop{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-22px) scale(1.08,.94)}60%{transform:translateY(0) scale(.96,1.06)}100%{transform:translateY(0) scale(1)}}
+  .petwrap.sad .pet-anim{animation:droop 3s ease-in-out infinite; transform-origin:50% 90%;}
+  @keyframes droop{0%,100%{transform:rotate(-2deg) translateY(2px)}50%{transform:rotate(2deg) translateY(0)}}
+  .aura{position:absolute; inset:-6% ; border-radius:50%; z-index:-1;
+    background:radial-gradient(circle,rgba(245,185,66,.35),transparent 62%); animation:pulse 2.6s ease-in-out infinite; display:none;}
+  .petwrap.legend .aura{display:block;}
+  @keyframes pulse{0%,100%{transform:scale(.9);opacity:.5}50%{transform:scale(1.15);opacity:1}}
+  .petname{font-size:15px; font-weight:800; margin-top:4px; letter-spacing:.5px;}
+  .petname .edit{font-size:11px; color:var(--sub); margin-left:6px; cursor:pointer; font-weight:400;}
+  .petmood{font-size:12px; color:var(--sub); margin-top:2px; min-height:16px;}
+  .speech{display:inline-block; background:var(--card2); border:1px solid var(--border); border-radius:14px;
+    padding:7px 14px; font-size:13px; margin:8px auto 2px; max-width:90%; position:relative; animation:fade .3s;}
+
+  /* ===== ステータス ===== */
+  .lvrow{display:flex; align-items:center; gap:10px; margin:12px 4px 6px;}
+  .lvbadge{background:linear-gradient(135deg,var(--accent),var(--purple)); color:#fff; font-weight:800;
+    border-radius:12px; padding:6px 12px; font-size:13px; min-width:58px; text-align:center; box-shadow:0 3px 10px rgba(79,142,247,.4);}
+  .xpouter{flex:1;} .xptrack{height:12px; background:var(--card2); border-radius:8px; overflow:hidden; border:1px solid var(--border);}
+  .xpfill{height:100%; background:linear-gradient(90deg,#4f8ef7,#34c98e,#f5b942); border-radius:8px; width:0; transition:width .6s cubic-bezier(.2,.8,.2,1);}
+  .xptxt{font-size:10px; color:var(--sub); margin-top:3px; text-align:right;}
+  .chips{display:flex; justify-content:center; gap:10px; margin:6px 0 2px; flex-wrap:wrap;}
+  .chip{background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:12px; color:var(--sub);}
+  .chip b{color:var(--text); font-size:15px; font-weight:800;} .chip.fire b{color:var(--amber);} .chip.coin b{color:var(--amber);}
+
+  /* ===== タスク ===== */
+  .task{display:flex; align-items:center; gap:12px; padding:13px 12px; background:var(--card2); border-radius:12px;
+    margin-bottom:9px; cursor:pointer; border:1px solid transparent; transition:.18s; position:relative;}
+  .task:active{transform:scale(.985);}
+  .task.done{border-color:var(--green); background:#17281f;}
+  .task .cb{width:26px; height:26px; min-width:26px; border-radius:8px; border:2px solid var(--sub);
+    display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; transition:.18s;}
+  .task.done .cb{background:var(--green); border-color:var(--green); transform:scale(1.05);}
+  .task .t-name{font-size:14px; font-weight:600; line-height:1.35;} .task.done .t-name{text-decoration:line-through; opacity:.7;}
+  .task .t-time{font-size:11px; color:var(--sub); margin-top:2px;}
+  .task .xpget{font-size:10px; color:var(--amber); position:absolute; right:12px; top:10px; opacity:.8;}
+  .task.min-line{border-style:dashed; border-color:var(--amber); background:#26210f;}
+  .banner{border-radius:12px; padding:11px 14px; font-size:13px; line-height:1.6; margin-bottom:10px; border:1px solid;}
   .banner.warn{background:#3a2a1a; border-color:var(--amber); color:#f5d9a0;}
   .banner.alert{background:#3a1e1e; border-color:var(--red); color:#f5b0b0;}
   .banner.rest{background:#16342a; border-color:var(--green); color:#a8e8cc;}
+  .banner.tap{cursor:pointer;}
+
+  /* ===== 汎用 ===== */
+  .btn{background:var(--accent); color:#fff; border:none; border-radius:12px; padding:12px 18px; font-size:14px; font-weight:700; cursor:pointer; transition:.15s;}
+  .btn:active{transform:scale(.96);}
+  .btn.ghost{background:var(--card2); color:var(--text); border:1px solid var(--border);}
+  .btn.green{background:var(--green);} .btn.red{background:var(--red);} .btn.amber{background:var(--amber); color:#222;}
+  .btn.sm{padding:8px 12px; font-size:12px;} .btn:disabled{opacity:.4; cursor:default;}
+  nav{position:fixed; bottom:0; left:0; right:0; display:flex; background:rgba(20,26,43,.96); backdrop-filter:blur(8px);
+    border-top:1px solid var(--border); z-index:20; padding-bottom:env(safe-area-inset-bottom);}
+  nav button{flex:1; background:none; border:none; color:var(--sub); padding:10px 2px 12px; font-size:10px; cursor:pointer; transition:.15s;}
+  nav button .ic{display:block; font-size:20px; margin-bottom:2px;} nav button.active{color:var(--accent);}
+  nav button.active .ic{transform:translateY(-2px);}
+  .flash{min-height:170px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:22px 16px; cursor:pointer;}
+  .flash .word{font-size:32px; font-weight:800;} .flash .pos{font-size:12px; color:var(--purple); margin-top:6px;}
+  .flash .meaning{font-size:20px; font-weight:700; color:var(--green); margin-top:12px;} .flash .hint{font-size:12px; color:var(--sub); margin-top:14px;}
+  .fc-btns{display:flex; gap:8px;} .fc-btns .btn{flex:1;}
+  .stat-row{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+  .pill{background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:12px; color:var(--sub);} .pill b{color:var(--text);}
+  textarea{width:100%; min-height:200px; background:var(--card2); border:1px solid var(--border); border-radius:12px; color:var(--text); padding:12px; font-size:14px; line-height:1.6; resize:vertical;}
+  textarea:focus{outline:none; border-color:var(--accent);}
+  .timer-disp{font-size:44px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:8px 0;}
+  .timer-disp.warn{color:var(--amber);} .timer-disp.over{color:var(--red);}
+  .prompt-box{background:var(--card2); border-left:3px solid var(--accent); border-radius:10px; padding:12px 14px; font-size:14px; line-height:1.7; margin-bottom:12px;}
+  .prompt-box .pts{font-size:12px; color:var(--sub); margin-top:6px;}
+  select,input[type=time],input[type=text]{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; font-size:14px;}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
+  .hist-item{background:var(--card2); border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:var(--sub);} .hist-item b{color:var(--text);}
+  .wc{font-size:12px; color:var(--sub); text-align:right; margin-top:6px;} .center{text-align:center;}
+  footer{max-width:680px; margin:16px auto 0; padding:0 16px; font-size:11px; color:var(--sub); text-align:center; line-height:1.6;}
   .heat{display:grid; grid-template-columns:repeat(10,1fr); gap:5px;}
   .heat .cell{aspect-ratio:1; border-radius:5px; background:var(--card2); position:relative; font-size:8px; color:var(--sub); display:flex; align-items:flex-end; justify-content:flex-end; padding:2px;}
   .heat .cell.l1{background:#274a6e;} .heat .cell.l2{background:#2f6ba8;} .heat .cell.l3{background:#4f8ef7;} .heat .cell.l4{background:#34c98e; color:#0b3;}
   .heat .cell.today{outline:2px solid var(--amber);}
-  .flash{min-height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px 16px; cursor:pointer;}
-  .flash .word{font-size:32px; font-weight:800; letter-spacing:.5px;}
-  .flash .pos{font-size:12px; color:var(--purple); margin-top:6px;}
-  .flash .meaning{font-size:20px; font-weight:700; color:var(--green); margin-top:12px;}
-  .flash .hint{font-size:12px; color:var(--sub); margin-top:14px;}
-  .fc-btns{display:flex; gap:8px; margin-top:4px;}
-  .fc-btns .btn{flex:1;}
-  .stat-row{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
-  .pill{background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:12px; color:var(--sub);}
-  .pill b{color:var(--text);}
-  textarea{width:100%; min-height:220px; background:var(--card2); border:1px solid var(--border); border-radius:10px; color:var(--text); padding:12px; font-size:14px; line-height:1.6; resize:vertical;}
-  textarea:focus{outline:none; border-color:var(--accent);}
-  .timer-disp{font-size:44px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:8px 0;}
-  .timer-disp.warn{color:var(--amber);} .timer-disp.over{color:var(--red);}
-  .prompt-box{background:var(--card2); border-left:3px solid var(--accent); border-radius:8px; padding:12px 14px; font-size:14px; line-height:1.7; margin-bottom:12px;}
-  .prompt-box .pts{font-size:12px; color:var(--sub); margin-top:6px;}
-  select,input[type=date],input[type=number]{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:9px 12px; font-size:14px;}
-  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
-  .hist-item{background:var(--card2); border-radius:8px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:var(--sub);}
-  .hist-item b{color:var(--text);}
-  .tab-pane{display:none;} .tab-pane.active{display:block;}
-  .phase-label{display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px; background:var(--purple); color:#fff; margin-left:6px;}
-  .wc{font-size:12px; color:var(--sub); text-align:right; margin-top:6px;}
-  .center{text-align:center;}
-  footer{max-width:680px; margin:20px auto 0; padding:0 16px; font-size:11px; color:var(--sub); text-align:center;}
-  /* ガチャ */
-  .gacha-stage{font-size:64px; margin:12px 0; min-height:80px; transition:.2s;}
-  .gacha-stage.shake{animation:shake .5s;}
-  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg) scale(1.1)}75%{transform:rotate(12deg) scale(1.1)}}
+  .gacha-stage{font-size:70px; margin:10px 0; min-height:86px; transition:.2s;}
+  .gacha-stage.shake{animation:gshake .5s;}
+  @keyframes gshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg) scale(1.12)}75%{transform:rotate(12deg) scale(1.12)}}
   .gacha-res{font-size:15px; font-weight:800; min-height:24px; margin-bottom:12px;}
   .rar-N{color:var(--sub);} .rar-R{color:var(--accent);} .rar-SR{color:var(--purple);} .rar-SSR{color:var(--amber); text-shadow:0 0 12px rgba(245,185,66,.6);}
   .col-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px;}
   .col-item{background:var(--card2); border:1px solid var(--border); border-radius:10px; text-align:center; padding:10px 4px 6px;}
-  .col-item .em{font-size:26px;}
-  .col-item .cn{font-size:9px; margin-top:2px;}
-  .col-item .ct{font-size:10px; color:var(--sub);}
+  .col-item .em{font-size:26px;} .col-item .cn{font-size:9px; margin-top:2px;} .col-item .ct{font-size:10px; color:var(--sub);}
   .col-item.locked{opacity:.25; filter:grayscale(1);}
+
+  /* ===== オーバーレイ演出 ===== */
+  #fx{position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden;}
+  .conf{position:absolute; width:9px; height:14px; border-radius:2px; top:-20px; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg); opacity:.9}}
+  #levelup{position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; pointer-events:none;}
+  #levelup .lu-inner{text-align:center; animation:luPop .7s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes luPop{0%{transform:scale(.4); opacity:0}60%{transform:scale(1.1); opacity:1}100%{transform:scale(1)}}
+  #levelup .lu-badge{font-size:60px;} #levelup .lu-t{font-size:26px; font-weight:900; color:var(--amber); text-shadow:0 0 18px rgba(245,185,66,.7);}
+  #levelup .lu-s{font-size:14px; color:var(--text); margin-top:6px;}
+  .xpfloat{position:fixed; z-index:55; font-weight:900; color:var(--amber); font-size:20px; pointer-events:none; animation:xpUp 1s ease forwards; text-shadow:0 2px 6px #000;}
+  @keyframes xpUp{0%{opacity:0; transform:translateY(0) scale(.6)}20%{opacity:1}100%{opacity:0; transform:translateY(-60px) scale(1.1)}}
+  .install-bar{background:linear-gradient(135deg,#22314f,#2c3f66); border:1px solid var(--accent); border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:13px;}
 </style>
 </head>
 <body>
-<header>
-  <h1>英検準1級 特訓</h1>
-  <div class="day" id="dayLabel"></div>
-  <div class="streak-bar">
-    <div class="streak-item"><div class="num fire" id="streakNum">0</div><div class="lbl">連続 🔥</div></div>
-    <div class="streak-item"><div class="num" id="coinNum" style="color:var(--amber)">0</div><div class="lbl">ガチャ券 🪙</div></div>
-    <div class="streak-item"><div class="num" id="wordsLearned">0</div><div class="lbl">習得単語</div></div>
-    <div class="streak-item"><div class="num" id="lightLeft">2</div><div class="lbl">ライト残/週</div></div>
-  </div>
-</header>
+<div id="fx"></div>
+<div id="levelup"><div class="lu-inner"><div class="lu-badge">✨</div><div class="lu-t" id="luT">LEVEL UP!</div><div class="lu-s" id="luS"></div></div></div>
 
 <main>
-  <!-- ホーム -->
+  <!-- ========== ホーム ========== -->
   <div class="tab-pane active" id="pane-home">
-    <div class="card" id="todayCard">
-      <h2>今日のタスク <span class="phase-label" id="phaseLabel"></span></h2>
+    <div id="installBox"></div>
+    <div class="card hero">
+      <div class="petwrap" id="petwrap" onclick="pokePet()">
+        <div class="aura"></div>
+        <div id="petSvg"></div>
+      </div>
+      <div class="petname" id="petName">相棒 <span class="edit" onclick="event.stopPropagation();renamePet()">✎</span></div>
+      <div class="petmood" id="petMood"></div>
+      <div id="speechWrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="lvrow">
+        <div class="lvbadge" id="lvBadge">Lv.1</div>
+        <div class="xpouter">
+          <div class="xptrack"><div class="xpfill" id="xpFill"></div></div>
+          <div class="xptxt" id="xpTxt"></div>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip fire">🔥 連続 <b id="streakNum">0</b>日</div>
+        <div class="chip coin">🎟 <b id="coinNum">0</b></div>
+        <div class="chip">📖 <b id="wordsLearned">0</b>語</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>今日のメニュー <span class="tag" id="dayLabel"></span></h2>
       <div id="banners"></div>
       <div id="taskList"></div>
-      <div class="progress-wrap"><div class="progress-bar" id="todayProg" style="width:0%"></div></div>
-      <p style="font-size:11px; color:var(--sub); margin-top:8px;">💡 全達成で🪙1枚。忙しい日は⚡最低ラインだけでもOK(週2回まで)。</p>
-    </div>
-    <div class="card" id="checkpointCard" style="display:none"></div>
-  </div>
-
-  <!-- 記録 -->
-  <div class="tab-pane" id="pane-cal">
-    <div class="card">
-      <h2>60日ヒートマップ</h2>
-      <div class="heat" id="heatmap"></div>
-      <div class="row" style="margin-top:12px; font-size:11px; color:var(--sub);">
-        <span>薄い=一部達成</span><span style="color:var(--green)">緑=全タスク達成</span><span style="color:var(--amber)">枠=今日</span>
-      </div>
-    </div>
-    <div class="card">
-      <h2>週次ふりかえり(日曜推奨)</h2>
-      <div class="row">
-        <select id="weakSkill">
-          <option value="">今週の弱点技能を選択</option>
-          <option>単語</option><option>読解</option><option>リスニング</option><option>ライティング</option><option>スピーキング</option>
-        </select>
-        <button class="btn sm" onclick="saveWeak()">記録</button>
-      </div>
-      <div id="weakHist"></div>
-    </div>
-    <div class="card">
-      <h2>設定</h2>
-      <div class="row">
-        <select id="modeSel" onchange="setMode()">
-          <option value="plan">60日集中プラン</option>
-          <option value="endless">エンドレス(曜日ルーティン)</option>
-        </select>
-      </div>
-      <div class="row">
-        <input type="date" id="startDateInput">
-        <button class="btn ghost sm" onclick="changeStart()">開始日を変更</button>
-      </div>
-      <p style="font-size:12px; color:var(--sub); line-height:1.7;">60日プランはDay60終了後、自動でエンドレス(月:単語+聴解/火:読解/水:作文/木:聴解/金:弱点/土:過去問通し/日:回復日)に移行。日曜の回復日はライトチケットを消費しません。</p>
-      <div class="row" style="margin-top:8px;">
-        <button class="btn ghost sm" onclick="exportData()">バックアップ書き出し</button>
-        <button class="btn ghost sm" onclick="document.getElementById('importFile').click()">読み込み</button>
-        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-        <button class="btn red sm" onclick="resetAll()">全リセット</button>
-      </div>
+      <p style="font-size:11px; color:var(--sub); margin-top:8px;">全部やると相棒が育つ🌱 忙しい日は⚡最低ラインだけでもOK。</p>
     </div>
   </div>
 
-  <!-- 単語 -->
+  <!-- ========== 単語 ========== -->
   <div class="tab-pane" id="pane-vocab">
     <div class="card">
       <h2>単語フラッシュカード <span class="tag">間隔反復</span></h2>
@@ -173,17 +191,17 @@
       <div class="fc-btns" id="fcBtns" style="display:none">
         <button class="btn red" onclick="rateCard(0)">もう一度</button>
         <button class="btn amber" onclick="rateCard(1)">微妙</button>
-        <button class="btn green" onclick="rateCard(2)">OK</button>
+        <button class="btn green" onclick="rateCard(2)">OK (+XP)</button>
       </div>
       <div class="center" id="fcDone" style="display:none; padding:20px 0;">
-        <p style="font-size:15px; font-weight:700;">🎉 今日のカードは完了!</p>
+        <p style="font-size:15px; font-weight:700;">🎉 今日のカード完了!</p>
         <p style="font-size:12px; color:var(--sub); margin-top:6px;">明日また復習が届きます</p>
         <button class="btn ghost sm" style="margin-top:12px;" onclick="extraNew()">追加で新規10語やる</button>
       </div>
     </div>
   </div>
 
-  <!-- ライティング -->
+  <!-- ========== 作文 ========== -->
   <div class="tab-pane" id="pane-write">
     <div class="card">
       <h2>ライティング特訓</h2>
@@ -202,22 +220,19 @@
       </div>
       <textarea id="writeArea" placeholder="ここに英文を書く…" oninput="updateWC()"></textarea>
       <div class="wc" id="writeWC">0 words</div>
-      <button class="btn green" style="width:100%; margin-top:8px;" onclick="saveWriting()">提出して記録</button>
+      <button class="btn green" style="width:100%; margin-top:8px;" onclick="saveWriting()">提出して記録 (+20XP)</button>
     </div>
-    <div class="card">
-      <h2>提出履歴</h2>
-      <div id="writeHist"><p style="font-size:12px;color:var(--sub)">まだ記録がありません</p></div>
-    </div>
+    <div class="card"><h2>提出履歴</h2><div id="writeHist"></div></div>
   </div>
 
-  <!-- スピーキング -->
+  <!-- ========== 面接 ========== -->
   <div class="tab-pane" id="pane-speak">
     <div class="card">
-      <h2>スピーキング(S-CBT録音式対応)</h2>
+      <h2>スピーキング(S-CBT録音式)</h2>
       <div class="row">
         <select id="speakMode" onchange="newSpeak()">
-          <option value="narration">ナレーション練習(準備1分→2分)</option>
-          <option value="qa">Q&A練習(考える10秒→1分)</option>
+          <option value="narration">ナレーション(準備1分→2分)</option>
+          <option value="qa">Q&A(考える10秒→1分)</option>
         </select>
         <button class="btn ghost sm" onclick="newSpeak()">お題を変える</button>
       </div>
@@ -228,25 +243,68 @@
         <button class="btn" id="speakStartBtn" onclick="startSpeak()">スタート</button>
         <button class="btn ghost" onclick="resetSpeak()">リセット</button>
       </div>
-      <p style="font-size:12px; color:var(--sub); line-height:1.7; margin-top:10px;">📱 スマホのボイスメモで録音→聞き直すと効果大。ナレーションは「時制は過去形」「各コマ2〜3文」を徹底。</p>
+      <button class="btn green sm" style="width:100%; margin-top:6px;" onclick="finishSpeak()">録音して聞き直した (+15XP)</button>
+      <p style="font-size:12px; color:var(--sub); line-height:1.7; margin-top:10px;">📱 ボイスメモで録音→聞き直すと効果大。ナレは「過去形・各コマ2〜3文」を徹底。</p>
     </div>
   </div>
 
-  <!-- ガチャ -->
+  <!-- ========== ガチャ ========== -->
   <div class="tab-pane" id="pane-gacha">
     <div class="card center">
       <h2>デイリーガチャ</h2>
-      <p style="font-size:12px; color:var(--sub);">コアタスク全達成で1日🪙1枚。ストリーク3/7/14/30/60日でボーナス券!</p>
+      <p style="font-size:12px; color:var(--sub);">メニュー全達成で🎟1枚。連続3/7/14/30/60/100日でボーナス!</p>
       <div class="gacha-stage" id="gachaStage">🎰</div>
       <div class="gacha-res" id="gachaRes"></div>
-      <button class="btn amber" id="gachaBtn" onclick="pullGacha()">1回引く(🪙1)</button>
+      <button class="btn amber" id="gachaBtn" onclick="pullGacha()">1回引く</button>
     </div>
     <div class="card">
       <h2>コレクション <span class="tag" id="colStat"></span></h2>
       <div class="col-grid" id="colGrid"></div>
       <div class="stat-row" style="margin-top:12px;">
-        <span class="pill">🛡 ストリーク保護 <b id="shieldN">0</b>個(サボった日を自動でカバー)</span>
+        <span class="pill">🛡 ストリーク保護 <b id="shieldN">0</b>個(サボった日を自動カバー)</span>
       </div>
+    </div>
+  </div>
+
+  <!-- ========== 記録 ========== -->
+  <div class="tab-pane" id="pane-cal">
+    <div class="card">
+      <h2>継続ヒートマップ <span class="tag">直近70日</span></h2>
+      <div class="heat" id="heatmap"></div>
+      <div class="row" style="margin-top:12px; font-size:11px; color:var(--sub);">
+        <span>薄い=一部</span><span style="color:var(--green)">緑=全達成</span><span style="color:var(--amber)">枠=今日</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🔔 リマインド通知</h2>
+      <div class="row">
+        <input type="time" id="remTime" value="20:00">
+        <button class="btn sm" onclick="enableReminder()">通知をON</button>
+        <button class="btn ghost sm" onclick="testNotify()">テスト</button>
+      </div>
+      <div id="remStatus" style="font-size:12px; color:var(--sub); line-height:1.6;"></div>
+    </div>
+    <div class="card">
+      <h2>週次ふりかえり(日曜推奨)</h2>
+      <div class="row">
+        <select id="weakSkill">
+          <option value="">今週の弱点技能を選択</option>
+          <option>単語</option><option>読解</option><option>リスニング</option><option>ライティング</option><option>スピーキング</option>
+        </select>
+        <button class="btn sm" onclick="saveWeak()">記録</button>
+      </div>
+      <div id="weakHist"></div>
+    </div>
+    <div class="card">
+      <h2>設定</h2>
+      <div class="row">
+        <button class="btn ghost sm" onclick="toggleSound()"><span id="soundLbl">🔊 効果音: ON</span></button>
+        <button class="btn ghost sm" onclick="exportData()">バックアップ書き出し</button>
+        <button class="btn ghost sm" onclick="document.getElementById('importFile').click()">読み込み</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn red sm" onclick="resetAll()">全リセット</button>
+      </div>
+      <p style="font-size:12px; color:var(--sub); line-height:1.7;">曜日メニュー: 月=単語+聴解 / 火=読解 / 水=作文 / 木=聴解 / 金=弱点 / 土=実戦 / 日=回復日。期間制限はありません。毎日1タップで続けるほど相棒が育ちます。</p>
     </div>
   </div>
 </main>
@@ -257,87 +315,313 @@
   <button data-pane="write" onclick="switchTab(this)"><span class="ic">✍️</span>作文</button>
   <button data-pane="speak" onclick="switchTab(this)"><span class="ic">🎤</span>面接</button>
   <button data-pane="gacha" onclick="switchTab(this)"><span class="ic">🎰</span>ガチャ</button>
-  <button data-pane="cal" onclick="switchTab(this)"><span class="ic">📅</span>記録</button>
+  <button data-pane="cal" onclick="switchTab(this)"><span class="ic">📊</span>記録</button>
 </nav>
-<footer>データはこのブラウザ内(localStorage)に保存されます。端末を変えるときは「記録」タブからバックアップを。</footer>
+<footer>データはこの端末のブラウザ内に保存されます。機種変更時は「記録」→バックアップを。</footer>
 
 <script>
-/* ---------- データ ---------- */
-const LS_KEY="eiken_p1_v1";
+/* ========== ストレージ ========== */
+const LS_KEY="eiken_p1_v2";
 let S=load();
 function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
 function save(){localStorage.setItem(LS_KEY,JSON.stringify(S));}
 function initS(){
   S.checks=S.checks||{}; S.cards=S.cards||{}; S.writings=S.writings||[]; S.weak=S.weak||[];
   S.coins=S.coins||0; S.col=S.col||{}; S.shields=S.shields||0; S.shieldUsed=S.shieldUsed||{};
-  S.extraLight=S.extraLight||{}; S.coinDays=S.coinDays||{}; S.milestones=S.milestones||{};
-  S.mode=S.mode||"plan";
+  S.coinDays=S.coinDays||{}; S.milestones=S.milestones||{};
+  S.xp=S.xp||0; S.xpDays=S.xpDays||{}; S.petName=S.petName||"モジャ"; S.sound=(S.sound!==false);
+  S.reminder=S.reminder||null; S.firstDay=S.firstDay||null;
+  // v1データからの移行(存在すれば引き継ぎ)
+  if(!localStorage.getItem(LS_KEY)){
+    try{const old=JSON.parse(localStorage.getItem("eiken_p1_v1"));
+      if(old){["checks","cards","writings","weak","coins","col","shields","shieldUsed","coinDays"].forEach(k=>{if(old[k]!=null)S[k]=old[k];});}
+    }catch(e){}
+  }
 }
 initS();
 
-/* ---------- 日付ユーティリティ(ローカルTZ) ---------- */
+/* ========== 日付 ========== */
 function fmtD(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
 const today=()=>fmtD(new Date());
 function parseD(s){return new Date(s+"T00:00:00");}
 function addDays(s,n){const d=parseD(s); d.setDate(d.getDate()+n); return fmtD(d);}
 function mondayOf(s){const d=parseD(s); const off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); return fmtD(d);}
 
-/* ---------- タスク定義 ---------- */
-const PHASES={
- 1:{name:"Phase1 基礎固め",tasks:[
-   {id:"v",n:"単語100語 高速回転(パス単でる度A)",t:"60分"},
-   {id:"l",n:"リスニングPart1×5問+シャドーイング3回",t:"30分"},
-   {id:"r",n:"長文1題を精読(不明単語はノートへ)",t:"45分"},
-   {id:"n",n:"寝る前:今日の単語100語を再テスト",t:"15分"}]},
- 2:{name:"Phase2 技能別強化",tasks:[
-   {id:"v",n:"単語でる度B+Aの復習",t:"40分"},
-   {id:"w",n:"ライティング1本(写経→再現→自力へ)",t:"45分"},
-   {id:"l",n:"リスニングPart2×1+Part1×2 先読み練習",t:"40分"},
-   {id:"r",n:"読解1題を時間計測(12分以内)",t:"40分"}]},
- 3:{name:"Phase3 過去問演習",tasks:[
-   {id:"p",n:"過去問通し(週2回) or 弱点技能の集中特訓",t:"60〜120分"},
-   {id:"v",n:"間違い単語のみ回転+でる度C頻出品詞",t:"30分"},
-   {id:"w",n:"意見論述または要約を1本(計測)",t:"30分"}]},
- 4:{name:"Phase4 仕上げ",tasks:[
-   {id:"s",n:"ナレーション2本 音読→録音→聞き直し",t:"40分"},
-   {id:"v",n:"間違い単語のみ(新規はやらない)",t:"20分"},
-   {id:"p",n:"通し演習 or 時間配分の最終確認",t:"90分"}]}
-};
-const ENDLESS_WEEK={
- 0:{name:"日:回復日",rest:true,tasks:[
+/* ========== 曜日メニュー(エンドレス) ========== */
+const WEEK={
+ 0:{name:"日 · 回復日",rest:true,tasks:[
    {id:"rev",n:"週次振り返り:正答率を記録し来週の重点を決める",t:"20分"},
    {id:"v",n:"単語:間違いカードのみ軽く回転",t:"20分"}]},
- 1:{name:"月:単語+聴解",tasks:[
+ 1:{name:"月 · 単語+聴解",tasks:[
    {id:"v",n:"単語フラッシュカード(復習+新規)",t:"30分"},
    {id:"l",n:"リスニング1パッセージ+シャドーイング",t:"30分"}]},
- 2:{name:"火:読解",tasks:[
+ 2:{name:"火 · 読解",tasks:[
    {id:"r",n:"長文1題を時間計測(12分以内)",t:"40分"},
    {id:"v",n:"単語カード消化",t:"20分"}]},
- 3:{name:"水:作文",tasks:[
+ 3:{name:"水 · 作文",tasks:[
    {id:"w",n:"意見論述or要約を1本(計測)",t:"40分"},
    {id:"v",n:"単語カード消化",t:"20分"}]},
- 4:{name:"木:聴解",tasks:[
+ 4:{name:"木 · 聴解",tasks:[
    {id:"l",n:"リスニングPart2×1+Part1×3 先読み",t:"40分"},
    {id:"v",n:"単語カード消化",t:"20分"}]},
- 5:{name:"金:弱点強化",tasks:[
+ 5:{name:"金 · 弱点強化",tasks:[
    {id:"x",n:"今週の弱点技能に集中(記録タブで設定)",t:"45分"},
    {id:"v",n:"単語カード消化",t:"20分"}]},
- 6:{name:"土:実戦",tasks:[
+ 6:{name:"土 · 実戦",tasks:[
    {id:"p",n:"過去問を本番時間で通し→採点→間違い分析",t:"120分"},
    {id:"w",n:"書いた作文を模範解答と比較",t:"20分"}]}
 };
-const MIN_TASK={id:"min",n:"⚡最低ライン:単語30分だけ",t:"忙しい日はこれだけでOK(週2回まで)"};
-function phaseOf(d){if(d<=14)return 1; if(d<=35)return 2; if(d<=52)return 3; return 4;}
-function planInfoFor(dateStr){
-  let d=null;
-  if(S.start)d=Math.floor((parseD(dateStr)-parseD(S.start))/864e5)+1;
-  if(S.mode!=="endless"&&d&&d>=1&&d<=60){const p=PHASES[phaseOf(d)]; return{name:p.name,tasks:p.tasks,rest:false,day:d};}
-  const w=ENDLESS_WEEK[parseD(dateStr).getDay()];
-  return{name:w.name,tasks:w.tasks,rest:!!w.rest,day:d};
-}
-const CHECKPOINTS={14:"📍 Day14チェック: でる度Aの正答率90%未満なら、Phase2でも単語60分を維持。",35:"📍 Day35チェック: 過去問1回分を時間無制限で通し。現在地を採点で確認。",45:"🎯 Day45判断模試: R65%/L60%/作文25分で書き切れる→3つ揃えばS-CBT即申込み!欠けたら弱点に2週間→翌月受験。",53:"🎤 ここからスピーキング毎日。意見論述のネタは面接Q&Aに流用できる。",60:"🏁 Day60!前日は新しいことをせず、テンプレと型の最終確認だけ。以降はエンドレスモードに自動移行。"};
+const MIN_TASK={id:"min",n:"⚡最低ライン:単語30分だけ",t:"忙しい日はこれだけでOK"};
+function menuFor(dateStr){const w=WEEK[parseD(dateStr).getDay()]; return{name:w.name,tasks:w.tasks,rest:!!w.rest};}
 
-/* ---------- 単語データ(準1級頻出 188語) ---------- */
+/* ========== XP / レベル / 進化 ========== */
+const XP={task:12, allBonus:25, min:8, card:2, write:20, speak:15};
+function levelInfo(xp){let lv=1,need=60,cur=xp; while(cur>=need){cur-=need; lv++; need=Math.round(need*1.18);} return{lv,cur,need};}
+function petStage(lv){ if(lv<3)return 0; if(lv<6)return 1; if(lv<11)return 2; if(lv<17)return 3; if(lv<25)return 4; return 5; }
+const STAGE_NAME=["たまご","ベビー","チビ","ヤング","成体","レジェンド"];
+// パレット(進化で色が変化)
+const PET_COL=["#f5d98a","#7fd4c1","#8fb8f5","#b39bf5","#f59bcf","#ffd76a"];
+
+function renderPet(mood){
+  const {lv}=levelInfo(S.xp); const st=petStage(lv); const c=PET_COL[st];
+  const wrap=document.getElementById("petwrap");
+  wrap.className="petwrap"+(mood==="happy"?" happy":"")+(mood==="sad"?" sad":"")+(st>=5?" legend":"");
+  let eyeY=76, mouth="", extra="", bodyW=70,bodyH=64,cy=96;
+  // 表情
+  const eyes = mood==="sad"
+      ? `<path d="M62 74 q8 6 16 0" stroke="#22303f" stroke-width="4" fill="none" stroke-linecap="round"/>
+         <path d="M122 74 q8 6 16 0" stroke="#22303f" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      : `<circle cx="70" cy="${eyeY}" r="8.5" fill="#22303f"/><circle cx="130" cy="${eyeY}" r="8.5" fill="#22303f"/>
+         <circle cx="73" cy="${eyeY-3}" r="2.6" fill="#fff"/><circle cx="133" cy="${eyeY-3}" r="2.6" fill="#fff"/>`;
+  mouth = mood==="happy"
+      ? `<path d="M84 104 q16 20 32 0" stroke="#22303f" stroke-width="4.5" fill="#f2726f" stroke-linecap="round"/>`
+      : mood==="sad"
+      ? `<path d="M86 112 q14 -12 28 0" stroke="#22303f" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      : `<path d="M88 106 q12 8 24 0" stroke="#22303f" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  // ほっぺ
+  const cheeks=`<circle cx="58" cy="94" r="7" fill="#ff9db0" opacity=".55"/><circle cx="142" cy="94" r="7" fill="#ff9db0" opacity=".55"/>`;
+
+  let body="";
+  if(st===0){ // たまご
+    const crack = lv>=2? `<path d="M84 70 l10 8 l-6 8 l10 8" stroke="#d9b45c" stroke-width="2.5" fill="none"/>`:"";
+    body=`<ellipse cx="100" cy="106" rx="52" ry="60" fill="${c}"/>
+          <ellipse cx="100" cy="106" rx="52" ry="60" fill="url(#sh)"/>
+          <ellipse cx="82" cy="80" rx="14" ry="20" fill="#fff" opacity=".35"/>${crack}
+          <circle cx="80" cy="108" r="6" fill="#22303f"/><circle cx="120" cy="108" r="6" fill="#22303f"/>
+          <path d="M90 122 q10 8 20 0" stroke="#22303f" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    document.getElementById("petSvg").innerHTML=svgWrap(body);
+    return;
+  }
+  // 進化パーツ
+  if(st>=2){ extra += `<path d="M100 38 q-4 -16 6 -20 q-2 10 6 14 z" fill="#5fd39a"/>`; } // 芽
+  if(st>=3){ extra += `<ellipse cx="40" cy="98" rx="16" ry="24" fill="${c}" transform="rotate(-25 40 98)"/>
+                       <ellipse cx="160" cy="98" rx="16" ry="24" fill="${c}" transform="rotate(25 160 98)"/>`; } // 羽
+  if(st>=4){ extra += `<path d="M126 44 l6 -18 l6 18 z" fill="#f5b942"/>`; } // 角
+  if(st>=5){ extra = `<path d="M70 34 l8 -20 l8 20 l10 -14 l4 20 l12 -8 l-6 18 h-64 l-6 -18 l12 8 l4 -20 l10 14 l8 -20 z" fill="#ffd76a" stroke="#f0b23a" stroke-width="1.5"/>`+extra; } // 王冠
+  bodyW=56; bodyH=52; cy=100;
+  body=`${extra}
+        <ellipse cx="100" cy="${cy}" rx="${bodyW}" ry="${bodyH}" fill="${c}"/>
+        <ellipse cx="100" cy="${cy}" rx="${bodyW}" ry="${bodyH}" fill="url(#sh)"/>
+        <ellipse cx="80" cy="${cy-30}" rx="12" ry="16" fill="#fff" opacity=".3"/>
+        ${cheeks}${eyes}${mouth}`;
+  document.getElementById("petSvg").innerHTML=svgWrap(body);
+}
+function svgWrap(inner){
+  return `<svg viewBox="0 0 200 180" class="pet-anim">
+    <defs><radialGradient id="sh" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".35"/><stop offset="60%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient></defs>${inner}</svg>`;
+}
+
+/* ========== ホーム描画 ========== */
+function moodNow(){
+  const info=menuFor(today()); const ch=S.checks[today()]||[];
+  const coreDone=info.tasks.filter(t=>ch.includes(t.id)).length;
+  if(coreDone>=info.tasks.length) return "happy";
+  if(coreDone>0||ch.includes("min")) return "good";
+  // 昨日サボり & 今日未着手 → sad
+  const y=addDays(today(),-1);
+  const yInfo=menuFor(y); const ych=S.checks[y]||[];
+  const yDone=(ych.length>0)||S.shieldUsed[y]||yInfo.rest;
+  if(!yDone && !S.firstDay) return "sad";
+  return "idle";
+}
+const SPEECH={
+  happy:["今日も完璧!キミ最高✨","この調子!準1級が近づいてる🔥","うれしい〜!また明日もね","毎日えらい。着実に強くなってる💪"],
+  good:["いい感じ!残りもいこう","その調子〜","もう少しで今日クリア!","ナイス、続けよ〜"],
+  idle:["今日のぶん、やってこ〜","1タップから始めよ!","単語だけでもOKだよ","ちょっとだけでも会いに来て✨"],
+  sad:["昨日は会えなくて寂しかった…","戻ってきてくれて嬉しい🥺","今日は最低ラインだけでも!","一緒にまた始めよ?"]
+};
+function say(mood){
+  const arr=SPEECH[mood]||SPEECH.idle;
+  const t=arr[Math.floor(Math.random()*arr.length)];
+  document.getElementById("speechWrap").innerHTML=`<div class="speech">${t}</div>`;
+}
+function pokePet(){ beep(660,.06); vibe(10);
+  const w=document.getElementById("petwrap"); w.classList.remove("happy"); void w.offsetWidth; w.classList.add("happy");
+  say(moodNow()); }
+function renamePet(){ const n=prompt("相棒の名前を入力(12文字まで)",S.petName); if(n&&n.trim()){S.petName=n.trim().slice(0,12); save(); renderHome();} }
+
+function renderHome(){
+  if(!S.firstDay){S.firstDay=today(); save();}
+  const info=menuFor(today());
+  document.getElementById("dayLabel").textContent=info.name;
+  const checks=S.checks[today()]||[];
+  const tasks=[...info.tasks,MIN_TASK];
+  document.getElementById("taskList").innerHTML=tasks.map(t=>{
+    const done=checks.includes(t.id);
+    const xp=t.id==="min"?XP.min:XP.task;
+    return `<div class="task ${done?"done":""} ${t.id==="min"?"min-line":""}" onclick="toggleTask('${t.id}',event)">
+      <div class="cb">${done?"✓":""}</div>
+      <div style="flex:1"><div class="t-name">${t.n}</div><div class="t-time">${t.t}</div></div>
+      ${done?"":`<div class="xpget">+${xp}XP</div>`}</div>`;
+  }).join("");
+  // コア全達成 → コイン(1日1回)
+  const coreDone=info.tasks.filter(t=>checks.includes(t.id)).length;
+  if(coreDone===info.tasks.length && !S.coinDays[today()]){
+    S.coinDays[today()]=1; S.coins++; save();
+  }
+  const mood=moodNow();
+  document.getElementById("petName").innerHTML=`${S.petName} <span style="font-size:11px;color:var(--sub);font-weight:400">Lv.${levelInfo(S.xp).lv} · ${STAGE_NAME[petStage(levelInfo(S.xp).lv)]}</span> <span class="edit" onclick="event.stopPropagation();renamePet()">✎</span>`;
+  document.getElementById("petMood").textContent = mood==="happy"?"ごきげん🎵":mood==="good"?"やる気アップ↑":mood==="sad"?"さみしがってる…":"待ってるよ";
+  renderPet(mood); say(mood);
+  renderBanners(info); updateStats();
+}
+function renderBanners(info){
+  let h="";
+  // ライトのみ3日連続 → やさしく促す
+  let lightRun=0;
+  for(let i=1;i<=3;i++){ const k=addDays(today(),-i); const inf=menuFor(k); if(inf.rest){lightRun++;continue;}
+    const ch=S.checks[k]||[]; const only=ch.includes("min")&&!inf.tasks.some(t=>ch.includes(t.id)); if(only)lightRun++; else break; }
+  if(lightRun>=3) h+=`<div class="banner warn">😴 3日連続ライトのみ。今日はコアを1つだけでも再開しよう(相棒も待ってる)。</div>`;
+  // 10日連続フル → 休息OK
+  let full=0;
+  for(let i=1;i<=10;i++){ const k=addDays(today(),-i); if(k<S.firstDay)break; const inf=menuFor(k);
+    if(inf.rest){full++;continue;} const ch=S.checks[k]||[]; if(inf.tasks.every(t=>ch.includes(t.id)))full++; else break; }
+  if(full>=10) h+=`<div class="banner rest">🌿 10日連続フル達成!今日は意図的に軽くしてOK。回復も実力のうち。</div>`;
+  if(S.coins>0) h+=`<div class="banner rest tap" onclick="goGacha()">🎟 ガチャ券が ${S.coins} 枚! タップして引く</div>`;
+  document.getElementById("banners").innerHTML=h;
+}
+function updateStats(){
+  const has=k=>(S.checks[k]||[]).length>0||S.shieldUsed[k];
+  let streak=0,changed=false,cur=today();
+  if(!has(cur))cur=addDays(cur,-1);
+  while(cur>=S.firstDay){
+    if(has(cur))streak++;
+    else if(S.shields>0){S.shields--; S.shieldUsed[cur]=true; streak++; changed=true;}
+    else break;
+    cur=addDays(cur,-1);
+  }
+  const MS={3:1,7:2,14:3,30:5,60:10,100:20};
+  for(const ms of Object.keys(MS)){ if(streak>=+ms&&!S.milestones[ms]){S.milestones[ms]=1; S.coins+=MS[ms]; changed=true;} }
+  if(changed)save();
+  document.getElementById("streakNum").textContent=streak;
+  document.getElementById("coinNum").textContent=S.coins;
+  document.getElementById("wordsLearned").textContent=Object.values(S.cards).filter(c=>c.iv>=4).length;
+  // XPバー
+  const li=levelInfo(S.xp);
+  document.getElementById("lvBadge").textContent="Lv."+li.lv;
+  document.getElementById("xpFill").style.width=Math.min(100,li.cur/li.need*100)+"%";
+  document.getElementById("xpTxt").textContent=`${li.cur} / ${li.need} XP`;
+}
+
+/* ========== XP付与 ========== */
+function addXP(n,srcXY){
+  const before=levelInfo(S.xp).lv;
+  S.xp+=n; save();
+  const after=levelInfo(S.xp).lv;
+  showXpFloat(n,srcXY);
+  updateStats();
+  if(after>before){ setTimeout(()=>levelUp(after),400); }
+}
+function levelUp(lv){
+  const st=petStage(lv);
+  beep(880,.12); setTimeout(()=>beep(1174,.16),120); vibe([20,40,20]);
+  confetti(90);
+  const box=document.getElementById("levelup");
+  document.getElementById("luT").textContent="LEVEL UP! Lv."+lv;
+  const evolved = lv===3||lv===6||lv===11||lv===17||lv===25;
+  document.getElementById("luS").textContent = evolved? `🌟 ${S.petName}が「${STAGE_NAME[st]}」に進化した!` : `${S.petName}がよろこんでいる`;
+  box.style.display="flex";
+  renderPet("happy");
+  setTimeout(()=>{box.style.display="none"; renderHome();},1900);
+}
+
+/* ========== タスク ========== */
+function toggleTask(id,ev){
+  const key=today(); S.checks[key]=S.checks[key]||[];
+  const i=S.checks[key].indexOf(id);
+  const xp=id==="min"?XP.min:XP.task;
+  const xy=ev?{x:ev.clientX,y:ev.clientY}:null;
+  if(i>=0){ S.checks[key].splice(i,1); S.xp=Math.max(0,S.xp-xp); if(S.xpDays[key])S.xpDays[key]=Math.max(0,S.xpDays[key]-xp); save(); renderHome(); }
+  else{
+    S.checks[key].push(id); beep(720,.05); vibe(12);
+    const info=menuFor(key);
+    const coreDone=info.tasks.filter(t=>S.checks[key].includes(t.id)).length;
+    let gain=xp;
+    // 全達成ボーナス
+    if(id!=="min" && coreDone===info.tasks.length && !S.checks[key].includes("_bonus")){
+      S.checks[key].push("_bonus"); gain+=XP.allBonus; confetti(60);
+    }
+    S.xpDays[key]=(S.xpDays[key]||0)+gain; save();
+    addXP(gain,xy);
+    renderHome();
+  }
+}
+
+/* ========== 演出 ========== */
+function confetti(n){
+  const fx=document.getElementById("fx"); const cols=["#4f8ef7","#34c98e","#f5b942","#9d7bf5","#f57bb0"];
+  for(let i=0;i<n;i++){ const c=document.createElement("div"); c.className="conf";
+    c.style.left=Math.random()*100+"vw"; c.style.background=cols[i%cols.length];
+    c.style.animationDuration=(1.6+Math.random()*1.4)+"s"; c.style.animationDelay=(Math.random()*.3)+"s";
+    fx.appendChild(c); setTimeout(()=>c.remove(),3400); }
+}
+function showXpFloat(n,xy){
+  const el=document.createElement("div"); el.className="xpfloat"; el.textContent="+"+n+"XP";
+  const x=xy?xy.x:window.innerWidth/2, y=xy?xy.y:120;
+  el.style.left=(x-16)+"px"; el.style.top=(y-10)+"px"; document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+let AC=null;
+function beep(freq,dur){ if(!S.sound)return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain(); o.frequency.value=freq; o.type="sine";
+  o.connect(g); g.connect(AC.destination); g.gain.setValueAtTime(.12,AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur); o.start(); o.stop(AC.currentTime+dur);}catch(e){} }
+function vibe(p){ if(navigator.vibrate)try{navigator.vibrate(p);}catch(e){} }
+function toggleSound(){ S.sound=!S.sound; save(); document.getElementById("soundLbl").textContent="🔊 効果音: "+(S.sound?"ON":"OFF"); if(S.sound)beep(660,.08); }
+
+/* ========== タブ ========== */
+function switchTab(btn){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+  document.getElementById("pane-"+btn.dataset.pane).classList.add("active");
+  if(btn.dataset.pane==="cal"){renderHeat(); renderRemStatus();}
+  if(btn.dataset.pane==="vocab")renderFlash();
+  if(btn.dataset.pane==="gacha")renderGacha();
+  if(btn.dataset.pane==="home")renderHome();
+}
+function goGacha(){document.querySelector('nav button[data-pane="gacha"]').click();}
+
+/* ========== ヒートマップ ========== */
+function renderHeat(){
+  const el=document.getElementById("heatmap"); el.innerHTML="";
+  const start=addDays(today(),-69);
+  for(let i=0;i<70;i++){
+    const key=addDays(start,i); const checks=S.checks[key]||[]; const inf=menuFor(key);
+    const doneN=inf.tasks.filter(t=>checks.includes(t.id)).length; let cls="";
+    if(checks.filter(x=>x[0]!=="_").length>0){ const r=doneN/inf.tasks.length; cls=r>=1?"l4":r>=.66?"l3":r>=.33?"l2":"l1"; }
+    else if(S.shieldUsed[key])cls="l1";
+    if(key===today())cls+=" today";
+    el.innerHTML+=`<div class="cell ${cls}" title="${key}">${parseD(key).getDate()}</div>`;
+  }
+  renderWeak();
+}
+function saveWeak(){const v=document.getElementById("weakSkill").value; if(!v)return; S.weak.unshift({d:today(),s:v}); S.weak=S.weak.slice(0,10); save(); renderWeak();}
+function renderWeak(){document.getElementById("weakHist").innerHTML=S.weak.map(w=>`<div class="hist-item">${w.d} → 重点: <b>${w.s}</b></div>`).join("");}
+
+/* ========== 単語データ(準1級頻出 188語) ========== */
 const VOCAB=[
 ["abolish","〜を廃止する","動"],["accommodate","〜を収容する・対応する","動"],["accumulate","〜を蓄積する","動"],["acknowledge","〜を認める","動"],["advocate","〜を提唱する/擁護者","動/名"],["allocate","〜を割り当てる","動"],["alleviate","〜を緩和する","動"],["anticipate","〜を予期する","動"],["assess","〜を評価・査定する","動"],["attribute","〜のせいと考える/特性","動/名"],
 ["boost","〜を押し上げる・高める","動"],["cite","〜を引用する・挙げる","動"],["collide","衝突する","動"],["compensate","補償する・埋め合わせる","動"],["compile","〜を編集・まとめる","動"],["comply","(規則に)従う","動"],["conceive","〜を思いつく・想像する","動"],["condemn","〜を非難する","動"],["confine","〜を制限する・閉じ込める","動"],["confront","〜に立ち向かう・直面する","動"],
@@ -361,226 +645,9 @@ const VOCAB=[
 ["redundant","余分な・冗長な","形"],["rigorous","厳密な・厳しい","形"],["skeptical","懐疑的な","形"],["subtle","微妙な・かすかな","形"],["superficial","表面的な","形"],["susceptible","影響を受けやすい","形"],["tedious","退屈な","形"],["toxic","有毒な","形"],["transparent","透明な・明快な","形"],["vulnerable","脆弱な","形"]
 ];
 
-/* ---------- ライティングお題 ---------- */
-const ESSAYS=[
-["Agree or disagree: Japan should accept more foreign workers","Aging society / Cultural diversity / Job competition / Social services"],
-["Should university education be free for all students?","Equal opportunity / Government spending / Quality of education / Personal responsibility"],
-["Agree or disagree: Remote work is beneficial for society","Work-life balance / Productivity / Communication / Regional revitalization"],
-["Should governments do more to protect the environment?","Climate change / Economic growth / International cooperation / Individual responsibility"],
-["Are electric vehicles the best solution to air pollution?","Technology / Cost / Infrastructure / Alternative solutions"],
-["Should companies be required to promote more women to executive positions?","Equality / Company performance / Fairness of quotas / Work culture"],
-["Is space exploration worth the cost?","Scientific discovery / Government budgets / International prestige / Practical benefits"],
-["Should single-use plastics be banned?","Ocean pollution / Consumer convenience / Business costs / Alternatives"],
-["Agree or disagree: Artificial intelligence will do more good than harm","Employment / Medical progress / Privacy / Human relationships"],
-["Should the retirement age be raised?","Labor shortage / Health / Pension system / Youth employment"],
-["Should cities restrict the use of private cars in city centers?","Air quality / Public transportation / Local businesses / Convenience"],
-["Agree or disagree: Cash will disappear in the near future","Convenience / Security / Elderly people / Natural disasters"]];
-const SUMMARY_NOTE="過去問または問題集の英文(200語程度)を手元に用意し、60〜70語で要約。手順: ①各段落の主旨を1文ずつ抜き出す ②接続語(However, As a result など)でつなぐ ③本文の表現をそのまま使わず言い換える。";
-
-/* ---------- スピーキングお題 ---------- */
-const NARRATIONS=[
-"あなたは4コマイラストを見て物語を作ります(過去問/予想問題集のカードを使用)。1文目は指定文で始め、各コマ2〜3文・過去形で2分間話す。",
-"練習用ナレーション: 『家族がレストランで食事を注文しすぎて食べ残しが出た→もったいないと感じた→次の週、適量を注文した』を4場面に分けて2分で語る。",
-"練習用ナレーション: 『男性が通勤で車を使っていた→渋滞でストレス→自転車通勤に切り替えた→健康になり満足』を4場面に分けて2分で語る。"];
-const QAS=[
-"Do you think companies should allow employees to work from home?",
-"Should people stop using products made from animals?",
-"Do you think the government should spend more money on education?",
-"Is it important for children to learn a foreign language at an early age?",
-"Do you think social media has a negative influence on young people?",
-"Should Japan rely more on renewable energy?",
-"Do you think people today read fewer books than before? Is that a problem?",
-"Should parents limit the time their children spend on smartphones?",
-"Do you think tourism does more good than harm to local communities?",
-"Is a cashless society a good thing for everyone?",
-"Do you think convenience stores should stay open 24 hours a day?",
-"Should university students be required to study abroad?"];
-
-/* ---------- ガチャ ---------- */
-const GACHA=[
- {e:"🐣",n:"ひよこ",r:"N"},{e:"🍀",n:"クローバー",r:"N"},{e:"🐟",n:"さかな",r:"N"},{e:"📚",n:"本の妖精",r:"N"},
- {e:"🦊",n:"きつね",r:"R"},{e:"🐼",n:"パンダ",r:"R"},{e:"☕",n:"ご褒美カフェ券",r:"R"},{e:"🎫",n:"ライトチケット+1",r:"R",fx:"light"},
- {e:"🦉",n:"フクロウ賢者",r:"SR"},{e:"🌟",n:"スター",r:"SR"},{e:"🛡",n:"ストリーク保護",r:"SR",fx:"shield"},
- {e:"🐉",n:"ドラゴン",r:"SSR"},{e:"🦄",n:"ユニコーン",r:"SSR"},{e:"👑",n:"クラウン",r:"SSR"}];
-const RARITY_W=[["N",50],["R",30],["SR",15],["SSR",5]];
-const MILESTONES={3:1,7:2,14:3,30:5,60:10};
-
-function pullGacha(){
-  if(S.coins<1)return;
-  S.coins--;
-  let roll=Math.random()*100, rar="N";
-  for(const[r,w]of RARITY_W){if(roll<w){rar=r;break;}roll-=w;}
-  const pool=GACHA.filter(g=>g.r===rar);
-  const item=pool[Math.floor(Math.random()*pool.length)];
-  S.col[item.e]=(S.col[item.e]||0)+1;
-  let extra="";
-  if(item.fx==="shield"){S.shields++; extra=" → 🛡が1個増えた!";}
-  if(item.fx==="light"){const wk=mondayOf(today()); S.extraLight[wk]=(S.extraLight[wk]||0)+1; extra=" → 今週のライト枠+1!";}
-  save();
-  const stage=document.getElementById("gachaStage");
-  stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake");
-  stage.textContent="🎰";
-  document.getElementById("gachaRes").textContent="";
-  setTimeout(()=>{
-    stage.textContent=item.e;
-    const res=document.getElementById("gachaRes");
-    res.innerHTML=`<span class="rar-${item.r}">[${item.r}] ${item.n}</span>${extra}`;
-    renderGacha(); updateStats();
-  },500);
-}
-function renderGacha(){
-  document.getElementById("gachaBtn").disabled=S.coins<1;
-  document.getElementById("gachaBtn").textContent=`1回引く(🪙${S.coins>0?"1":"0"} / 所持${S.coins})`;
-  const owned=GACHA.filter(g=>S.col[g.e]).length;
-  document.getElementById("colStat").textContent=`${owned} / ${GACHA.length}種`;
-  document.getElementById("colGrid").innerHTML=GACHA.map(g=>{
-    const c=S.col[g.e]||0;
-    return `<div class="col-item ${c?"":"locked"}"><div class="em">${c?g.e:"❓"}</div><div class="cn rar-${g.r}">${c?g.n:"???"}</div><div class="ct">${c?"×"+c:g.r}</div></div>`;
-  }).join("");
-  document.getElementById("shieldN").textContent=S.shields;
-}
-function goGacha(){document.querySelector('nav button[data-pane="gacha"]').click();}
-
-/* ---------- タブ ---------- */
-function switchTab(btn){
-  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
-  document.getElementById("pane-"+btn.dataset.pane).classList.add("active");
-  if(btn.dataset.pane==="cal")renderHeat();
-  if(btn.dataset.pane==="vocab")renderFlash();
-  if(btn.dataset.pane==="gacha")renderGacha();
-}
-
-/* ---------- ホーム ---------- */
-function toggleTask(id){
-  const key=today(); S.checks[key]=S.checks[key]||[];
-  const i=S.checks[key].indexOf(id);
-  if(i>=0)S.checks[key].splice(i,1); else S.checks[key].push(id);
-  save(); render();
-}
-function isLightOnly(dateStr){
-  const ch=S.checks[dateStr]||[];
-  if(!ch.includes("min"))return false;
-  const info=planInfoFor(dateStr);
-  if(info.rest)return false;
-  return !info.tasks.some(t=>ch.includes(t.id));
-}
-function lightUsedThisWeek(){
-  let n=0, k=mondayOf(today());
-  while(k<=today()){if(isLightOnly(k))n++; k=addDays(k,1);}
-  return n;
-}
-function lightQuota(){return 2+(S.extraLight[mondayOf(today())]||0);}
-function render(){
-  if(!S.start){S.start=today(); save();}
-  const info=planInfoFor(today());
-  const d=info.day;
-  document.getElementById("dayLabel").textContent=(S.mode==="endless"||d>60)?`継続 ${d} 日目(エンドレス)`:`Day ${d} / 60`;
-  document.getElementById("phaseLabel").textContent=info.name;
-  const checks=S.checks[today()]||[];
-  const tasks=[...info.tasks,MIN_TASK];
-  document.getElementById("taskList").innerHTML=tasks.map(t=>{
-    const done=checks.includes(t.id);
-    return `<div class="task ${done?"done":""} ${t.id==="min"?"min-line":""}" onclick="toggleTask('${t.id}')">
-      <div class="cb">${done?"✓":""}</div>
-      <div><div class="t-name">${t.n}</div><div class="t-time">${t.t}</div></div></div>`;
-  }).join("");
-  const doneN=info.tasks.filter(t=>checks.includes(t.id)).length;
-  document.getElementById("todayProg").style.width=(doneN/info.tasks.length*100)+"%";
-  // コイン付与(コア全達成、1日1回)
-  if(doneN===info.tasks.length&&!S.coinDays[today()]){
-    S.coinDays[today()]=1; S.coins++; save();
-  }
-  // チェックポイント
-  const cp=document.getElementById("checkpointCard");
-  let msg=null;
-  if(S.mode!=="endless"&&d>=1&&d<=61){
-    for(const k of Object.keys(CHECKPOINTS)){if(d>=+k-1&&d<=+k+1)msg=CHECKPOINTS[k];}
-  }
-  cp.style.display=msg?"block":"none";
-  if(msg)cp.innerHTML=`<h2>チェックポイント</h2><p style="font-size:13px;line-height:1.7;">${msg}</p>`;
-  renderBanners(info);
-  updateStats();
-}
-function renderBanners(info){
-  let h="";
-  const used=lightUsedThisWeek(), quota=lightQuota();
-  if(used>quota){
-    h+=`<div class="banner alert">⚠️ 今週のライト枠(${quota}回)を超えています。今日はコアタスクを最低1つ。</div>`;
-  }else{
-    let cnt=0;
-    for(let i=1;i<=3;i++){if(isLightOnly(addDays(today(),-i)))cnt++; else break;}
-    if(cnt>=3)h+=`<div class="banner warn">😴 3日連続ライトのみ。今日はコアを1つだけでも再開しよう。</div>`;
-  }
-  let full=0;
-  for(let i=1;i<=10;i++){
-    const k=addDays(today(),-i);
-    if(k<S.start)break;
-    const inf=planInfoFor(k);
-    if(inf.rest){full++; continue;}
-    const ch=S.checks[k]||[];
-    if(inf.tasks.every(t=>ch.includes(t.id)))full++; else break;
-  }
-  if(full>=10)h+=`<div class="banner rest">🌿 10日連続フル達成!今日は意図的に軽くしてOK。回復も実力のうち。</div>`;
-  if(S.coins>0)h+=`<div class="banner rest" style="cursor:pointer" onclick="goGacha()">🎰 ガチャ券が ${S.coins} 枚あります — タップして引く</div>`;
-  document.getElementById("banners").innerHTML=h;
-}
-function updateStats(){
-  const has=k=>(S.checks[k]||[]).length>0||S.shieldUsed[k];
-  // ストリーク(シールド自動消費)
-  let streak=0, changed=false;
-  let cur=today();
-  if(!has(cur))cur=addDays(cur,-1);
-  while(cur>=S.start){
-    if(has(cur)){streak++;}
-    else if(S.shields>0){S.shields--; S.shieldUsed[cur]=true; streak++; changed=true;}
-    else break;
-    cur=addDays(cur,-1);
-  }
-  // マイルストーンボーナス
-  for(const ms of Object.keys(MILESTONES)){
-    if(streak>=+ms&&!S.milestones[ms]){S.milestones[ms]=1; S.coins+=MILESTONES[ms]; changed=true;}
-  }
-  if(changed)save();
-  document.getElementById("streakNum").textContent=streak;
-  document.getElementById("coinNum").textContent=S.coins;
-  document.getElementById("wordsLearned").textContent=Object.values(S.cards).filter(c=>c.iv>=4).length;
-  document.getElementById("lightLeft").textContent=Math.max(0,lightQuota()-lightUsedThisWeek());
-}
-
-/* ---------- 設定 ---------- */
-function setMode(){S.mode=document.getElementById("modeSel").value; save(); render();}
-function changeStart(){const v=document.getElementById("startDateInput").value; if(!v)return; S.start=v; save(); render(); alert("開始日を変更しました");}
-
-/* ---------- ヒートマップ ---------- */
-function renderHeat(){
-  const el=document.getElementById("heatmap"); el.innerHTML="";
-  const info=planInfoFor(today());
-  const planMode=S.mode!=="endless"&&info.day<=60;
-  const startKey=planMode?S.start:addDays(today(),-59);
-  for(let i=0;i<60;i++){
-    const key=addDays(startKey,i);
-    const checks=S.checks[key]||[];
-    const dayInf=planInfoFor(key);
-    const doneN=dayInf.tasks.filter(t=>checks.includes(t.id)).length;
-    let cls="";
-    if(checks.length>0){
-      const r=doneN/dayInf.tasks.length;
-      cls=r>=1?"l4":r>=.66?"l3":r>=.33?"l2":"l1";
-    }else if(S.shieldUsed[key]){cls="l1";}
-    if(key===today())cls+=" today";
-    const label=planMode?(i+1):parseD(key).getDate();
-    el.innerHTML+=`<div class="cell ${cls}" title="${key}">${label}</div>`;
-  }
-  renderWeak();
-}
-function saveWeak(){const v=document.getElementById("weakSkill").value; if(!v)return; S.weak.unshift({d:today(),s:v}); S.weak=S.weak.slice(0,10); save(); renderWeak();}
-function renderWeak(){document.getElementById("weakHist").innerHTML=S.weak.map(w=>`<div class="hist-item">${w.d} → 今週の重点: <b>${w.s}</b></div>`).join("");}
-
-/* ---------- フラッシュカード(間隔反復) ---------- */
+/* ========== フラッシュカード ========== */
 const INTERVALS=[0,1,3,7,14,30];
-let queue=[], curCard=null, extraAllowance=0;
+let queue=[], curCard=null, extraAllowance=0, cardXpToday=0;
 function buildQueue(){
   const t=today(); queue=[];
   VOCAB.forEach((v,i)=>{const c=S.cards[i]; if(c&&c.due<=t)queue.push(i);});
@@ -601,13 +668,11 @@ function nextCard(){
   document.getElementById("fcMeaning").style.display="none";
   if(queue.length===0){
     document.getElementById("flashCard").style.display="none";
-    document.getElementById("fcDone").style.display="block";
-    curCard=null; return;
+    document.getElementById("fcDone").style.display="block"; curCard=null; return;
   }
   document.getElementById("flashCard").style.display="flex";
   document.getElementById("fcDone").style.display="none";
-  curCard=queue[0];
-  const v=VOCAB[curCard];
+  curCard=queue[0]; const v=VOCAB[curCard];
   document.getElementById("fcWord").textContent=v[0];
   document.getElementById("fcPos").textContent=v[2];
   document.getElementById("fcMeaning").textContent=v[1];
@@ -626,130 +691,204 @@ function rateCard(rate){
   else if(rate===1){c.iv=Math.max(1,c.iv);}
   else{c.iv=Math.min(INTERVALS.length-1,c.iv+1);}
   c.due=addDays(t,INTERVALS[c.iv]);
-  S.cards[curCard]=c; save();
+  S.cards[curCard]=c;
+  // 単語XP(1日上限40XP)
+  if(rate>0 && (S.xpDays["card_"+t]||0)<40){ S.xpDays["card_"+t]=(S.xpDays["card_"+t]||0)+XP.card; addXP(XP.card,null); }
+  else save();
   queue.shift();
   document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(x=>x.iv>=4).length;
-  updateStats();
-  nextCard();
+  beep(700,.04); nextCard();
 }
 function extraNew(){extraAllowance+=10; renderFlash();}
 
-/* ---------- ライティング ---------- */
+/* ========== ライティングお題 ========== */
+const ESSAYS=[
+["Agree or disagree: Japan should accept more foreign workers","Aging society / Cultural diversity / Job competition / Social services"],
+["Should university education be free for all students?","Equal opportunity / Government spending / Quality of education / Personal responsibility"],
+["Agree or disagree: Remote work is beneficial for society","Work-life balance / Productivity / Communication / Regional revitalization"],
+["Should governments do more to protect the environment?","Climate change / Economic growth / International cooperation / Individual responsibility"],
+["Are electric vehicles the best solution to air pollution?","Technology / Cost / Infrastructure / Alternative solutions"],
+["Should companies be required to promote more women to executive positions?","Equality / Company performance / Fairness of quotas / Work culture"],
+["Is space exploration worth the cost?","Scientific discovery / Government budgets / International prestige / Practical benefits"],
+["Should single-use plastics be banned?","Ocean pollution / Consumer convenience / Business costs / Alternatives"],
+["Agree or disagree: Artificial intelligence will do more good than harm","Employment / Medical progress / Privacy / Human relationships"],
+["Should the retirement age be raised?","Labor shortage / Health / Pension system / Youth employment"],
+["Should cities restrict the use of private cars in city centers?","Air quality / Public transportation / Local businesses / Convenience"],
+["Agree or disagree: Cash will disappear in the near future","Convenience / Security / Elderly people / Natural disasters"]];
+const SUMMARY_NOTE="過去問または問題集の英文(200語程度)を手元に用意し、60〜70語で要約。手順: ①各段落の主旨を1文ずつ抜き出す ②接続語(However, As a result など)でつなぐ ③本文の表現をそのまま使わず言い換える。";
+const NARRATIONS=[
+"あなたは4コマイラストを見て物語を作ります(過去問/予想問題集のカードを使用)。1文目は指定文で始め、各コマ2〜3文・過去形で2分間話す。",
+"練習用: 『家族がレストランで食事を注文しすぎて食べ残しが出た→もったいないと感じた→次の週、適量を注文した』を4場面に分けて2分で語る。",
+"練習用: 『男性が通勤で車を使っていた→渋滞でストレス→自転車通勤に切り替えた→健康になり満足』を4場面に分けて2分で語る。"];
+const QAS=[
+"Do you think companies should allow employees to work from home?",
+"Should people stop using products made from animals?",
+"Do you think the government should spend more money on education?",
+"Is it important for children to learn a foreign language at an early age?",
+"Do you think social media has a negative influence on young people?",
+"Should Japan rely more on renewable energy?",
+"Do you think people today read fewer books than before? Is that a problem?",
+"Should parents limit the time their children spend on smartphones?",
+"Do you think tourism does more good than harm to local communities?",
+"Is a cashless society a good thing for everyone?",
+"Do you think convenience stores should stay open 24 hours a day?",
+"Should university students be required to study abroad?"];
+
+/* ========== ライティング ========== */
 let wTimer=null, wSec=1500, wRunning=false, curEssay=0;
 function newPrompt(){
   const mode=document.getElementById("writeMode").value;
   const box=document.getElementById("writePrompt");
-  if(mode==="essay"){
-    curEssay=Math.floor(Math.random()*ESSAYS.length);
-    const e=ESSAYS[curEssay];
+  if(mode==="essay"){ curEssay=Math.floor(Math.random()*ESSAYS.length); const e=ESSAYS[curEssay];
     box.innerHTML=`<b>TOPIC:</b> ${e[0]}<div class="pts"><b>POINTS:</b> ${e[1]}<br>構成: 序論1文→理由①2文→理由②2文→結論1文(120〜150語)</div>`;
-  }else{
-    box.innerHTML=`<b>要約練習</b><div class="pts">${SUMMARY_NOTE}</div>`;
-  }
+  }else{ box.innerHTML=`<b>要約練習</b><div class="pts">${SUMMARY_NOTE}</div>`; }
   resetWriteTimer();
 }
 function fmtT(s){const m=Math.floor(Math.abs(s)/60),ss=Math.abs(s)%60;return (s<0?"-":"")+m+":"+String(ss).padStart(2,"0");}
-function tickW(){
-  wSec--;
-  const el=document.getElementById("writeTimer");
-  el.textContent=fmtT(wSec);
-  el.className="timer-disp"+(wSec<0?" over":wSec<300?" warn":"");
-}
-function toggleWriteTimer(){
-  const btn=document.getElementById("writeStartBtn");
+function tickW(){ wSec--; const el=document.getElementById("writeTimer"); el.textContent=fmtT(wSec);
+  el.className="timer-disp"+(wSec<0?" over":wSec<300?" warn":""); }
+function toggleWriteTimer(){ const btn=document.getElementById("writeStartBtn");
   if(wRunning){clearInterval(wTimer); wRunning=false; btn.textContent="再開";}
-  else{wTimer=setInterval(tickW,1000); wRunning=true; btn.textContent="一時停止";}
-}
-function resetWriteTimer(){
-  clearInterval(wTimer); wRunning=false;
+  else{wTimer=setInterval(tickW,1000); wRunning=true; btn.textContent="一時停止";} }
+function resetWriteTimer(){ clearInterval(wTimer); wRunning=false;
   wSec=document.getElementById("writeMode").value==="essay"?1500:900;
   document.getElementById("writeTimer").textContent=fmtT(wSec);
   document.getElementById("writeTimer").className="timer-disp";
-  document.getElementById("writeStartBtn").textContent="スタート";
-}
-function updateWC(){
-  const txt=document.getElementById("writeArea").value.trim();
-  const n=txt?txt.split(/\s+/).length:0;
-  document.getElementById("writeWC").textContent=n+" words";
-}
+  document.getElementById("writeStartBtn").textContent="スタート"; }
+function updateWC(){ const txt=document.getElementById("writeArea").value.trim();
+  const n=txt?txt.split(/\s+/).length:0; document.getElementById("writeWC").textContent=n+" words"; }
 function saveWriting(){
   const txt=document.getElementById("writeArea").value.trim();
   if(!txt)return alert("英文が空です");
-  const mode=document.getElementById("writeMode").value;
-  const n=txt.split(/\s+/).length;
+  const mode=document.getElementById("writeMode").value; const n=txt.split(/\s+/).length;
   S.writings.unshift({d:today(),mode:mode==="essay"?"意見論述":"要約",words:n,topic:mode==="essay"?ESSAYS[curEssay][0]:"要約練習"});
   S.writings=S.writings.slice(0,30); save();
   document.getElementById("writeArea").value=""; updateWC(); resetWriteTimer(); renderWriteHist();
+  addXP(XP.write,null); confetti(40);
   alert("記録しました!模範解答と比べて、使えなかった表現を3つメモすると効果大。");
 }
-function renderWriteHist(){
-  const el=document.getElementById("writeHist");
+function renderWriteHist(){ const el=document.getElementById("writeHist");
   if(S.writings.length===0){el.innerHTML='<p style="font-size:12px;color:var(--sub)">まだ記録がありません</p>';return;}
-  el.innerHTML=S.writings.map(w=>`<div class="hist-item">${w.d} <b>${w.mode}</b> ${w.words}語 — ${w.topic}</div>`).join("");
-}
+  el.innerHTML=S.writings.map(w=>`<div class="hist-item">${w.d} <b>${w.mode}</b> ${w.words}語 — ${w.topic}</div>`).join(""); }
 
-/* ---------- スピーキング ---------- */
+/* ========== スピーキング ========== */
 let sTimer=null, sSec=60, sStage=0;
-function newSpeak(){
-  const mode=document.getElementById("speakMode").value;
-  const box=document.getElementById("speakPrompt");
+function newSpeak(){ const mode=document.getElementById("speakMode").value; const box=document.getElementById("speakPrompt");
   if(mode==="narration")box.textContent=NARRATIONS[Math.floor(Math.random()*NARRATIONS.length)];
-  else box.innerHTML="<b>Question:</b> "+QAS[Math.floor(Math.random()*QAS.length)];
-  resetSpeak();
-}
-function startSpeak(){
-  clearInterval(sTimer);
-  const mode=document.getElementById("speakMode").value;
-  sStage=0;
+  else box.innerHTML="<b>Question:</b> "+QAS[Math.floor(Math.random()*QAS.length)]; resetSpeak(); }
+function startSpeak(){ clearInterval(sTimer); const mode=document.getElementById("speakMode").value; sStage=0;
   sSec=mode==="narration"?60:10;
-  document.getElementById("speakStage").textContent="準備時間";
-  document.getElementById("speakTimer").textContent=fmtT(sSec);
-  sTimer=setInterval(()=>{
-    sSec--;
-    const el=document.getElementById("speakTimer");
-    el.textContent=fmtT(sSec);
+  document.getElementById("speakStage").textContent="準備時間"; document.getElementById("speakTimer").textContent=fmtT(sSec);
+  sTimer=setInterval(()=>{ sSec--; const el=document.getElementById("speakTimer"); el.textContent=fmtT(sSec);
     el.className="timer-disp"+(sSec<=10&&sStage===1?" warn":"");
-    if(sSec<=0){
-      if(sStage===0){
-        sStage=1;
-        sSec=mode==="narration"?120:60;
-        document.getElementById("speakStage").textContent="🎙 話す!(録音推奨)";
-      }else{
-        clearInterval(sTimer);
-        document.getElementById("speakStage").textContent="✅ 終了 — 録音を聞き直そう";
-      }
-    }
-  },1000);
+    if(sSec<=0){ if(sStage===0){ sStage=1; sSec=mode==="narration"?120:60; document.getElementById("speakStage").textContent="🎙 話す!(録音推奨)"; beep(700,.1);}
+      else{ clearInterval(sTimer); document.getElementById("speakStage").textContent="✅ 終了 — 録音を聞き直そう"; beep(520,.15);} } },1000); }
+function resetSpeak(){ clearInterval(sTimer); const mode=document.getElementById("speakMode").value;
+  sSec=mode==="narration"?60:10; sStage=0; document.getElementById("speakTimer").textContent=fmtT(sSec);
+  document.getElementById("speakTimer").className="timer-disp"; document.getElementById("speakStage").textContent="準備時間"; }
+function finishSpeak(){ addXP(XP.speak,null); confetti(40); alert("お疲れさま!録音を聞き直して、詰まった箇所を1つメモしよう。"); }
+
+/* ========== ガチャ ========== */
+const GACHA=[
+ {e:"🐣",n:"ひよこ",r:"N"},{e:"🍀",n:"クローバー",r:"N"},{e:"🐟",n:"さかな",r:"N"},{e:"📚",n:"本の妖精",r:"N"},
+ {e:"🦊",n:"きつね",r:"R"},{e:"🐼",n:"パンダ",r:"R"},{e:"☕",n:"ご褒美カフェ券",r:"R"},{e:"🎫",n:"ライトチケット",r:"R"},
+ {e:"🦉",n:"フクロウ賢者",r:"SR"},{e:"🌟",n:"スター",r:"SR"},{e:"🛡",n:"ストリーク保護",r:"SR",fx:"shield"},
+ {e:"🐉",n:"ドラゴン",r:"SSR"},{e:"🦄",n:"ユニコーン",r:"SSR"},{e:"👑",n:"クラウン",r:"SSR"}];
+const RARITY_W=[["N",50],["R",30],["SR",15],["SSR",5]];
+function pullGacha(){
+  if(S.coins<1)return; S.coins--;
+  let roll=Math.random()*100, rar="N";
+  for(const[r,w]of RARITY_W){if(roll<w){rar=r;break;}roll-=w;}
+  const pool=GACHA.filter(g=>g.r===rar); const item=pool[Math.floor(Math.random()*pool.length)];
+  S.col[item.e]=(S.col[item.e]||0)+1; let extra="";
+  if(item.fx==="shield"){S.shields++; extra=" → 🛡が1個増えた!";}
+  save();
+  const stage=document.getElementById("gachaStage");
+  stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake");
+  stage.textContent="🎰"; document.getElementById("gachaRes").textContent="";
+  beep(600,.06);
+  setTimeout(()=>{
+    stage.textContent=item.e;
+    document.getElementById("gachaRes").innerHTML=`<span class="rar-${item.r}">[${item.r}] ${item.n}</span>${extra}`;
+    if(item.r==="SSR"||item.r==="SR"){confetti(70); beep(900,.12); setTimeout(()=>beep(1174,.14),120); vibe([15,30,15]);}
+    renderGacha(); updateStats();
+  },500);
 }
-function resetSpeak(){
-  clearInterval(sTimer);
-  const mode=document.getElementById("speakMode").value;
-  sSec=mode==="narration"?60:10; sStage=0;
-  document.getElementById("speakTimer").textContent=fmtT(sSec);
-  document.getElementById("speakTimer").className="timer-disp";
-  document.getElementById("speakStage").textContent="準備時間";
+function renderGacha(){
+  document.getElementById("gachaBtn").disabled=S.coins<1;
+  document.getElementById("gachaBtn").textContent=`1回引く(所持 🎟${S.coins})`;
+  const owned=GACHA.filter(g=>S.col[g.e]).length;
+  document.getElementById("colStat").textContent=`${owned} / ${GACHA.length}種`;
+  document.getElementById("colGrid").innerHTML=GACHA.map(g=>{ const c=S.col[g.e]||0;
+    return `<div class="col-item ${c?"":"locked"}"><div class="em">${c?g.e:"❓"}</div><div class="cn rar-${g.r}">${c?g.n:"???"}</div><div class="ct">${c?"×"+c:g.r}</div></div>`;
+  }).join("");
+  document.getElementById("shieldN").textContent=S.shields;
 }
 
-/* ---------- データ管理 ---------- */
-function exportData(){
-  const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="eiken_backup_"+today()+".json";
-  a.click();
+/* ========== リマインド通知 ========== */
+function renderRemStatus(){
+  const el=document.getElementById("remStatus"); let s="";
+  if(!("Notification" in window)){ s="この端末は通知に未対応です。"; }
+  else if(Notification.permission==="granted" && S.reminder){ s=`✅ 毎日 ${S.reminder} にリマインド設定中。<br><span style="opacity:.8">※ アプリを閉じている間の通知はOSの制限を受けます。ホーム画面に追加＆1日1回開くと安定します。</span>`; document.getElementById("remTime").value=S.reminder; }
+  else if(Notification.permission==="denied"){ s="通知がブロックされています。端末の設定から許可してください。"; }
+  else{ s="時刻を選んで「通知をON」を押すと、毎日その時間にリマインドします。"; }
+  el.innerHTML=s;
 }
-function importData(ev){
-  const f=ev.target.files[0]; if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{try{S=JSON.parse(r.result); initS(); save(); location.reload();}catch(e){alert("読み込み失敗");}};
-  r.readAsText(f);
+async function enableReminder(){
+  if(!("Notification" in window))return alert("この端末は通知に未対応です");
+  let perm=Notification.permission;
+  if(perm!=="granted")perm=await Notification.requestPermission();
+  if(perm!=="granted"){renderRemStatus();return;}
+  S.reminder=document.getElementById("remTime").value||"20:00"; save();
+  scheduleReminder(); renderRemStatus();
+  new Notification("リマインド設定完了 🔔",{body:`毎日 ${S.reminder} に相棒がお知らせします`});
 }
+function testNotify(){
+  if(!("Notification" in window))return alert("未対応です");
+  if(Notification.permission!=="granted")return enableReminder();
+  new Notification(S.petName+"だよ 🐣",{body:"今日のメニュー、やってこ〜!"});
+}
+let remTimer=null;
+function scheduleReminder(){
+  if(remTimer)clearTimeout(remTimer);
+  if(!S.reminder||Notification.permission!=="granted")return;
+  const [h,m]=S.reminder.split(":").map(Number);
+  const now=new Date(); const next=new Date(); next.setHours(h,m,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+  const ms=next-now;
+  remTimer=setTimeout(()=>{
+    const info=menuFor(today()); const ch=S.checks[today()]||[];
+    const done=info.tasks.every(t=>ch.includes(t.id));
+    if(!done && Notification.permission==="granted"){
+      try{ new Notification(S.petName+"が待ってるよ 🔥",{body:"今日のメニューをやって、連続記録をのばそう!"}); }catch(e){}
+    }
+    scheduleReminder();
+  },Math.min(ms,2147483000));
+}
+
+/* ========== データ管理 ========== */
+function exportData(){ const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="eiken_backup_"+today()+".json"; a.click(); }
+function importData(ev){ const f=ev.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{try{S=JSON.parse(r.result); initS(); save(); location.reload();}catch(e){alert("読み込み失敗");}}; r.readAsText(f); }
 function resetAll(){if(confirm("すべてのデータを消去しますか?")){localStorage.removeItem(LS_KEY); location.reload();}}
 
-/* ---------- 初期化 ---------- */
-document.getElementById("startDateInput").value=S.start||today();
-document.getElementById("modeSel").value=S.mode;
-render(); newPrompt(); newSpeak(); renderWriteHist();
+/* ========== PWA インストール ========== */
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e;
+  const isStandalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone;
+  if(isStandalone)return;
+  document.getElementById("installBox").innerHTML=`<div class="install-bar"><span style="flex:1">📲 ホーム画面に追加してアプリとして使う</span><button class="btn sm" onclick="doInstall()">追加</button></div>`;
+});
+async function doInstall(){ if(!deferredPrompt)return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById("installBox").innerHTML=""; }
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{})); }
+
+/* ========== 初期化 ========== */
+document.getElementById("soundLbl").textContent="🔊 効果音: "+(S.sound?"ON":"OFF");
+renderHome(); newPrompt(); newSpeak(); renderWriteHist();
+if(S.reminder)scheduleReminder();
+// 日付が変わった等で最新化
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden)renderHome(); });
 </script>
 </body>
 </html>
