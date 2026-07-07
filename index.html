@@ -87,6 +87,22 @@
   .task .t-time{font-size:11px; color:var(--sub); margin-top:2px;}
   .task .xpget{font-size:10px; color:var(--amber); position:absolute; right:12px; top:10px; opacity:.85;}
   .task.min-line{border-style:dashed; border-color:var(--amber); background:#26210f;}
+  .task.req{border-color:rgba(245,185,66,.5);}
+  .reqbadge{font-size:10px; background:var(--amber); color:#222; border-radius:6px; padding:1px 6px; margin-left:4px; font-weight:800;}
+  .menu-prog{font-size:12px; color:var(--sub); margin-bottom:10px; font-weight:700; line-height:1.5;}
+  .menu-prog.cleared{color:var(--green);}
+  .vq-combo{text-align:center; font-size:13px; color:var(--amber); min-height:18px; font-weight:800; margin-bottom:6px;}
+  .vq-prompt{min-height:96px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px; background:var(--card2); border-radius:12px; margin-bottom:12px;}
+  .vq-prompt .qword{font-size:30px; font-weight:800; letter-spacing:.5px;}
+  .vq-prompt .qmean{font-size:21px; font-weight:800; color:var(--green);}
+  .vq-prompt .qpos{font-size:12px; color:var(--purple); margin-top:4px;}
+  .vq-prompt .spk{margin-top:10px; background:var(--card); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:13px; cursor:pointer; color:var(--text);}
+  .vq-choices{display:grid; gap:8px;}
+  .vq-choice{background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:13px 12px; font-size:15px; cursor:pointer; text-align:center; transition:.15s;}
+  .vq-choice:active{transform:scale(.98);}
+  .vq-choice.correct{background:#17311f; border-color:var(--green); color:#a8e8cc;}
+  .vq-choice.wrong{background:#331717; border-color:var(--red); color:#f5b0b0;}
+  .vq-choice.dim{opacity:.45;}
   .banner{border-radius:12px; padding:11px 14px; font-size:13px; line-height:1.6; margin-bottom:10px; border:1px solid;}
   .banner.warn{background:#3a2a1a; border-color:var(--amber); color:#f5d9a0;}
   .banner.rest{background:#16342a; border-color:var(--green); color:#a8e8cc;}
@@ -208,7 +224,7 @@
       <h2>今日のメニュー <span class="tag" id="dayLabel"></span></h2>
       <div id="banners"></div>
       <div id="taskList"></div>
-      <p style="font-size:11px; color:var(--sub); margin-top:8px;">タップして実際にやると自動で完了になります(自己申告なし)。全部やると相棒が育ち🎟が1枚もらえる。</p>
+      <p style="font-size:11px; color:var(--sub); margin-top:8px;">タップして実際にやると自動で完了(自己申告なし)。必須＋合計3個やると「今日クリア」で🎟獲得。1つでもやれば連続は途切れません。</p>
       <div class="row" style="margin-top:8px; gap:6px;">
         <button class="btn ghost sm" onclick="openPractice('reading')">＋読解</button>
         <button class="btn ghost sm" onclick="openPractice('listening')">＋リスニング</button>
@@ -226,14 +242,10 @@
         <span class="pill">新規 <b id="newCount">0</b></span>
         <span class="pill">習得済み <b id="masteredCount">0</b></span>
       </div>
-      <div class="flash" id="flashCard" onclick="flipCard()">
-        <div class="word" id="fcWord">—</div><div class="pos" id="fcPos"></div>
-        <div class="meaning" id="fcMeaning" style="display:none"></div><div class="hint" id="fcHint">タップして意味を表示</div>
-      </div>
-      <div class="fc-btns" id="fcBtns" style="display:none">
-        <button class="btn red" onclick="rateCard(0)">もう一度</button>
-        <button class="btn amber" onclick="rateCard(1)">微妙</button>
-        <button class="btn green" onclick="rateCard(2)">OK (+XP)</button>
+      <div id="vArea">
+        <div class="vq-combo" id="vCombo"></div>
+        <div class="vq-prompt" id="vPrompt"></div>
+        <div class="vq-choices" id="vChoices"></div>
       </div>
       <div class="center" id="fcDone" style="display:none; padding:20px 0;">
         <p style="font-size:15px; font-weight:700;">🎉 今日のカード完了!</p>
@@ -389,17 +401,23 @@ function parseD(s){return new Date(s+"T00:00:00");}
 function addDays(s,n){const d=parseD(s); d.setDate(d.getDate()+n); return fmtD(d);}
 
 /* ========== 曜日メニュー ========== */
-const WEEK={
- 0:{name:"日 · 回復日",rest:true,tasks:[{id:"rev",n:"週次ふりかえりを記録する",t:"タップ"},{id:"v",n:"単語カードを軽く回す",t:"タップ"}]},
- 1:{name:"月 · 単語+聴解",tasks:[{id:"v",n:"単語カードを進める",t:"タップ"},{id:"l",n:"リスニング問題を解く",t:"タップ"}]},
- 2:{name:"火 · 読解",tasks:[{id:"r",n:"読解問題を解く",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
- 3:{name:"水 · 作文",tasks:[{id:"w",n:"作文を1本書いて提出",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
- 4:{name:"木 · 聴解",tasks:[{id:"l",n:"リスニング問題を解く",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]},
- 5:{name:"金 · 弱点強化",tasks:[{id:"r",n:"読解問題を解く",t:"タップ"},{id:"l",n:"リスニング問題を解く",t:"タップ"}]},
- 6:{name:"土 · 実戦(模試)",tasks:[{id:"p",n:"模試ミニ(5問)に挑戦",t:"タップ"},{id:"v",n:"単語カードを進める",t:"タップ"}]}
+const ACT={ v:{n:"単語カードを進める"}, r:{n:"読解問題を解く"}, l:{n:"リスニング問題を解く"}, w:{n:"作文を書いて提出"}, p:{n:"模試ミニ(5問)"}, s:{n:"面接(スピーキング)練習"} };
+const ALLOPTS=["v","r","l","w","p","s"];
+const DAYS={
+ 0:{name:"日 · 回復日",rest:true,required:"v",quota:2},
+ 1:{name:"月 · 単語の日",required:"v",quota:3},
+ 2:{name:"火 · 読解の日",required:"r",quota:3},
+ 3:{name:"水 · 作文の日",required:"w",quota:3},
+ 4:{name:"木 · 聴解の日",required:"l",quota:3},
+ 5:{name:"金 · 模試の日",required:"p",quota:3},
+ 6:{name:"土 · 実戦の日",required:"p",quota:3}
 };
-const MIN_TASK={id:"min",n:"⚡最低ライン:単語カード5枚だけ",t:"忙しい日はこれだけでOK"};
-function menuFor(dateStr){const w=WEEK[parseD(dateStr).getDay()]; return{name:w.name,tasks:w.tasks,rest:!!w.rest};}
+function menuFor(dateStr){ const d=DAYS[parseD(dateStr).getDay()];
+  return {name:d.name, rest:!!d.rest, required:d.required, quota:d.quota, options:ALLOPTS.map(id=>({id,n:ACT[id].n}))}; }
+function dayCleared(dateStr){ const info=menuFor(dateStr); const ch=S.checks[dateStr]||[];
+  if(!ch.includes(info.required)) return false;
+  return info.options.filter(o=>ch.includes(o.id)).length>=info.quota; }
+function doneCount(dateStr){ const ch=S.checks[dateStr]||[]; return ALLOPTS.filter(id=>ch.includes(id)).length; }
 
 /* ========== XP / レベル ========== */
 const XP={task:12, allBonus:25, min:8, card:2, write:20, speak:15};
@@ -544,12 +562,11 @@ function renderBg(){ document.getElementById("petStage").className="petstage "+(
 
 /* ========== ホーム ========== */
 function moodNow(){
-  const info=menuFor(today()); const ch=S.checks[today()]||[];
-  const coreDone=info.tasks.filter(t=>ch.includes(t.id)).length;
-  if(coreDone>=info.tasks.length) return "happy";
-  if(coreDone>0||ch.includes("min")) return "good";
-  const y=addDays(today(),-1); const yInfo=menuFor(y); const ych=S.checks[y]||[];
-  const yDone=(ych.length>0)||S.shieldUsed[y]||yInfo.rest;
+  const ch=S.checks[today()]||[];
+  if(dayCleared(today())) return "happy";
+  if(ALLOPTS.some(id=>ch.includes(id))) return "good";
+  const y=addDays(today(),-1); const ych=S.checks[y]||[];
+  const yDone=(ych.length>0)||S.shieldUsed[y];
   if(!yDone && S.firstDay && S.firstDay<today()) return "sad";
   return "idle";
 }
@@ -575,16 +592,18 @@ function renderHome(){
   const info=menuFor(today());
   document.getElementById("dayLabel").textContent=info.name;
   const checks=S.checks[today()]||[];
-  const tasks=[...info.tasks,MIN_TASK];
-  document.getElementById("taskList").innerHTML=tasks.map(t=>{
-    const done=checks.includes(t.id);
-    return `<div class="task ${done?"done":""} ${t.id==="min"?"min-line":""}" onclick="taskAction('${t.id}')">
+  const dc=doneCount(today()); const reqDone=checks.includes(info.required); const cleared=dayCleared(today());
+  const prog = cleared
+    ? `<div class="menu-prog cleared">✅ 今日クリア! 🎟を獲得 — 追加でやるほどXPアップ</div>`
+    : `<div class="menu-prog">🎯 必須「${ACT[info.required].n}」${reqDone?"✓ 済":"まだ"} ・ あと ${Math.max(0,info.quota-dc)} 個クリアで今日クリア(🎟)</div>`;
+  document.getElementById("taskList").innerHTML = prog + info.options.map(t=>{
+    const done=checks.includes(t.id); const req=(t.id===info.required);
+    return `<div class="task ${done?"done":""} ${req?"req":""}" onclick="taskAction('${t.id}')">
       <div class="cb">${done?"✓":"▶"}</div>
-      <div style="flex:1"><div class="t-name">${t.n}</div><div class="t-time">${done?"できた!":"タップして挑戦"}</div></div>
-      ${done?'<div class="xpget">✓ 完了</div>':'<div class="xpget">やる ▶</div>'}</div>`;
+      <div style="flex:1"><div class="t-name">${t.n}${req?' <span class="reqbadge">必須</span>':''}</div><div class="t-time">${done?"できた!":"タップして挑戦"}</div></div>
+      <div class="xpget">${done?"✓ 完了":"やる ▶"}</div></div>`;
   }).join("");
-  const coreDone=info.tasks.filter(t=>checks.includes(t.id)).length;
-  if(coreDone===info.tasks.length && !S.coinDays[today()]){ S.coinDays[today()]=1; S.coins++; save(); }
+  if(dayCleared(today()) && !S.coinDays[today()]){ S.coinDays[today()]=1; S.coins++; save(); }
   const mood=moodNow();
   const li=levelInfo(S.xp);
   document.getElementById("petName").innerHTML=`${S.petName} <span class="sub">Lv.${li.lv} · ${STAGE_NAME[petStage(li.lv)]}</span> <span class="edit" onclick="event.stopPropagation();renamePet()">✎</span>`;
@@ -592,16 +611,15 @@ function renderHome(){
   renderBuddyView(mood); say(mood);
   renderBanners(info); updateStats();
 }
-function renderBanners(info){
+function renderBanners(){
   let h="";
   let lightRun=0;
-  for(let i=1;i<=3;i++){ const k=addDays(today(),-i); const inf=menuFor(k); if(inf.rest){lightRun++;continue;}
-    const ch=S.checks[k]||[]; const only=ch.includes("min")&&!inf.tasks.some(t=>ch.includes(t.id)); if(only)lightRun++; else break; }
-  if(lightRun>=3) h+=`<div class="banner warn">😴 3日連続ライトのみ。今日はコアを1つだけでも再開しよう(相棒も待ってる)。</div>`;
+  for(let i=1;i<=3;i++){ const k=addDays(today(),-i); if(k<S.firstDay)break; const ch=S.checks[k]||[];
+    const any=ALLOPTS.some(id=>ch.includes(id)); if(any && !dayCleared(k))lightRun++; else break; }
+  if(lightRun>=3) h+=`<div class="banner warn">😴 3日つづけて途中まで。今日はあと少しで「今日クリア」を狙おう(相棒も待ってる)。</div>`;
   let full=0;
-  for(let i=1;i<=10;i++){ const k=addDays(today(),-i); if(k<S.firstDay)break; const inf=menuFor(k);
-    if(inf.rest){full++;continue;} const ch=S.checks[k]||[]; if(inf.tasks.every(t=>ch.includes(t.id)))full++; else break; }
-  if(full>=10) h+=`<div class="banner rest">🌿 10日連続フル達成!今日は意図的に軽くしてOK。回復も実力のうち。</div>`;
+  for(let i=1;i<=10;i++){ const k=addDays(today(),-i); if(k<S.firstDay)break; if(dayCleared(k))full++; else break; }
+  if(full>=10) h+=`<div class="banner rest">🌿 10日連続クリア!今日は軽めでもOK。回復も実力のうち。</div>`;
   if(S.coins>0) h+=`<div class="banner rest tap" onclick="goGacha()">🎟 ガチャ券が ${S.coins} 枚! タップして引く</div>`;
   document.getElementById("banners").innerHTML=h;
 }
@@ -634,12 +652,12 @@ function levelUp(lv){ const st=petStage(lv); beep(880,.12); setTimeout(()=>beep(
   box.style.display="flex"; renderBuddyView("happy"); setTimeout(()=>{box.style.display="none"; renderHome();},1900); }
 function goTab(p){document.querySelector('nav button[data-pane="'+p+'"]').click();}
 function taskAction(id){
-  if(id==="v"||id==="min"){ goTab("vocab"); return; }
+  if(id==="v"){ goTab("vocab"); return; }
   if(id==="w"){ goTab("write"); return; }
+  if(id==="s"){ goTab("speak"); return; }
   if(id==="l"){ openPractice("listening"); return; }
   if(id==="r"){ openPractice("reading"); return; }
   if(id==="p"){ openPractice("mock"); return; }
-  if(id==="rev"){ openReflection(); return; }
 }
 // 実際に活動をやり切ったときだけ完了になる(自己申告なし)
 function completeTask(id, xp){
@@ -647,11 +665,7 @@ function completeTask(id, xp){
   if(S.checks[key].includes(id)) return false;
   S.checks[key].push(id);
   let gain=(xp==null?XP.task:xp);
-  const info=menuFor(key);
-  if(info.tasks.some(t=>t.id===id)){
-    const coreDone=info.tasks.filter(t=>S.checks[key].includes(t.id)).length;
-    if(coreDone===info.tasks.length && !S.checks[key].includes("_bonus")){ S.checks[key].push("_bonus"); gain+=XP.allBonus; }
-  }
+  if(dayCleared(key) && !S.checks[key].includes("_bonus")){ S.checks[key].push("_bonus"); gain+=XP.allBonus; }
   save(); confetti(gain>=XP.allBonus?80:40); beep(760,.06); vibe(15); addXP(gain,null); renderHome();
   return true;
 }
@@ -681,9 +695,9 @@ function goGacha(){document.querySelector('nav button[data-pane="gacha"]').click
 /* ========== ヒートマップ ========== */
 function renderHeat(){
   const el=document.getElementById("heatmap"); el.innerHTML=""; const start=addDays(today(),-69);
-  for(let i=0;i<70;i++){ const key=addDays(start,i); const checks=S.checks[key]||[]; const inf=menuFor(key);
-    const doneN=inf.tasks.filter(t=>checks.includes(t.id)).length; let cls="";
-    if(checks.filter(x=>x[0]!=="_").length>0){ const r=doneN/inf.tasks.length; cls=r>=1?"l4":r>=.66?"l3":r>=.33?"l2":"l1"; }
+  for(let i=0;i<70;i++){ const key=addDays(start,i); const info=menuFor(key); const dcn=doneCount(key); let cls="";
+    if(dayCleared(key)) cls="l4";
+    else if(dcn>0){ const r=dcn/info.quota; cls=r>=.66?"l3":r>=.33?"l2":"l1"; }
     else if(S.shieldUsed[key])cls="l1"; if(key===today())cls+=" today";
     el.innerHTML+=`<div class="cell ${cls}" title="${key}">${parseD(key).getDate()}</div>`; }
   renderWeak();
@@ -717,7 +731,7 @@ const VOCAB=[
 
 /* ========== フラッシュカード ========== */
 const INTERVALS=[0,1,3,7,14,30];
-let queue=[], curCard=null, extraAllowance=0;
+let queue=[], curCard=null, extraAllowance=0, vqData=null, vCombo=0, vAnswered=false;
 function buildQueue(){ const t=today(); queue=[];
   VOCAB.forEach((v,i)=>{const c=S.cards[i]; if(c&&c.due<=t)queue.push(i);});
   const introducedToday=Object.values(S.cards).filter(c=>c.added===t).length;
@@ -726,21 +740,44 @@ function buildQueue(){ const t=today(); queue=[];
 function renderFlash(){ buildQueue(); const due=queue.filter(i=>S.cards[i]).length;
   document.getElementById("dueCount").textContent=due; document.getElementById("newCount").textContent=queue.length-due;
   document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(c=>c.iv>=4).length; nextCard(); }
-function nextCard(){ document.getElementById("fcBtns").style.display="none"; document.getElementById("fcMeaning").style.display="none";
-  if(queue.length===0){ document.getElementById("flashCard").style.display="none"; document.getElementById("fcDone").style.display="block"; curCard=null;
-    if((S.cardCount[today()]||0)>=1){ completeTask("v"); completeTask("min", XP.min); } return; }
-  document.getElementById("flashCard").style.display="flex"; document.getElementById("fcDone").style.display="none";
-  curCard=queue[0]; const v=VOCAB[curCard]; document.getElementById("fcWord").textContent=v[0]; document.getElementById("fcPos").textContent=v[2];
-  document.getElementById("fcMeaning").textContent=v[1]; document.getElementById("fcHint").style.display="block"; }
-function flipCard(){ if(curCard===null)return; document.getElementById("fcMeaning").style.display="block"; document.getElementById("fcHint").style.display="none"; document.getElementById("fcBtns").style.display="flex"; }
-function rateCard(rate){ const t=today(); let c=S.cards[curCard]||{iv:0,added:t};
-  if(rate===0){c.iv=0; queue.push(curCard);} else if(rate===1){c.iv=Math.max(1,c.iv);} else{c.iv=Math.min(INTERVALS.length-1,c.iv+1);}
+function nextCard(){
+  const area=document.getElementById("vArea"), doneEl=document.getElementById("fcDone");
+  if(queue.length===0){ area.style.display="none"; doneEl.style.display="block"; curCard=null;
+    if((S.cardCount[today()]||0)>=1) completeTask("v"); return; }
+  area.style.display="block"; doneEl.style.display="none"; vAnswered=false;
+  curCard=queue[0]; const c=S.cards[curCard]; const v=VOCAB[curCard];
+  const produce = c && c.iv>=2 && Math.random()<0.6; // レベルが上がると 意味→英単語(産出)
+  let pool=[]; for(let i=0;i<VOCAB.length;i++){ if(i!==curCard && VOCAB[i][2]===v[2]) pool.push(i); }
+  if(pool.length<3){ for(let i=0;i<VOCAB.length;i++){ if(i!==curCard && pool.indexOf(i)<0) pool.push(i); } }
+  pool.sort(()=>Math.random()-0.5);
+  const opts=[curCard, pool[0], pool[1], pool[2]].sort(()=>Math.random()-0.5);
+  vqData={opts, produce};
+  document.getElementById("vCombo").textContent = vCombo>=2 ? "🔥 "+vCombo+" コンボ!" : "";
+  const p=document.getElementById("vPrompt");
+  if(produce){ p.innerHTML=`<div class="qmean">${v[1]}</div><div class="qpos">この意味の英単語は?</div>`; }
+  else{ p.innerHTML=`<div class="qword">${v[0]}</div><div class="qpos">${v[2]}</div><div class="spk" onclick="speakWord(event)">🔊 発音を聞く</div>`; }
+  document.getElementById("vChoices").innerHTML = opts.map((oi,k)=>{
+    const label = produce ? VOCAB[oi][0] : VOCAB[oi][1];
+    return `<div class="vq-choice" id="vc${k}" onclick="chooseVocab(${k})">${label}</div>`;
+  }).join("");
+}
+function speakWord(ev){ if(ev)ev.stopPropagation(); try{ const v=VOCAB[curCard]; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(v[0]); u.lang="en-US"; u.rate=0.9; speechSynthesis.speak(u);}catch(e){} }
+function chooseVocab(k){
+  if(vAnswered)return; vAnswered=true;
+  const oi=vqData.opts[k]; const correct=(oi===curCard); const t=today();
+  vqData.opts.forEach((o,idx)=>{ const el=document.getElementById("vc"+idx);
+    if(o===curCard) el.classList.add("correct"); else if(idx===k) el.classList.add("wrong"); else el.classList.add("dim"); });
+  let c=S.cards[curCard]||{iv:0,added:t};
+  if(correct){ c.iv=Math.min(INTERVALS.length-1,c.iv+1); vCombo++; beep(760,.05); vibe(8); }
+  else{ c.iv=0; vCombo=0; beep(300,.09); vibe([10,40]); }
   c.due=addDays(t,INTERVALS[c.iv]); S.cards[curCard]=c;
   S.cardCount[t]=(S.cardCount[t]||0)+1;
-  if(rate>0 && (S.xpDays["card_"+t]||0)<40){ S.xpDays["card_"+t]=(S.xpDays["card_"+t]||0)+XP.card; addXP(XP.card,null); } else save();
-  if(S.cardCount[t]>=5) completeTask("min", XP.min);
+  if(correct && (S.xpDays["card_"+t]||0)<40){ S.xpDays["card_"+t]=(S.xpDays["card_"+t]||0)+XP.card; addXP(XP.card,null); } else save();
   if(S.cardCount[t]>=10) completeTask("v");
-  queue.shift(); document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(x=>x.iv>=4).length; beep(700,.04); nextCard(); }
+  document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(x=>x.iv>=4).length;
+  queue.shift(); if(!correct) queue.splice(Math.min(3,queue.length),0,curCard); // 間違いは後でまた出す
+  setTimeout(nextCard, correct?700:1200);
+}
 function extraNew(){extraAllowance+=10; renderFlash();}
 
 /* ========== 作文/面接データ ========== */
@@ -793,10 +830,10 @@ function startSpeak(){ clearInterval(sTimer); const mode=document.getElementById
   sTimer=setInterval(()=>{ sSec--; const el=document.getElementById("speakTimer"); el.textContent=fmtT(sSec); el.className="timer-disp"+(sSec<=10&&sStage===1?" warn":"");
     if(sSec<=0){ if(sStage===0){ sStage=1; sSec=mode==="narration"?120:60; document.getElementById("speakStage").textContent="🎙 話す!(録音推奨)"; beep(700,.1);} else{ clearInterval(sTimer); document.getElementById("speakStage").textContent="✅ 終了 — 録音を聞き直そう"; beep(520,.15);} } },1000); }
 function resetSpeak(){ clearInterval(sTimer); const mode=document.getElementById("speakMode").value; sSec=mode==="narration"?60:10; sStage=0; document.getElementById("speakTimer").textContent=fmtT(sSec); document.getElementById("speakTimer").className="timer-disp"; document.getElementById("speakStage").textContent="準備時間"; }
-function finishSpeak(){ addXP(XP.speak,null); confetti(40); alert("お疲れさま!録音を聞き直して、詰まった箇所を1つメモしよう。"); }
+function finishSpeak(){ addXP(XP.speak,null); confetti(40); completeTask("s"); alert("お疲れさま!今日の『面接』が完了になりました。録音を聞き直して、詰まった箇所を1つメモしよう。"); }
 
 /* ========== ガチャ ========== */
-function luckScore(){ const streak=window._streak||0; const info=menuFor(today()); const ch=S.checks[today()]||[]; const full=info.tasks.every(t=>ch.includes(t.id));
+function luckScore(){ const streak=window._streak||0; const full=dayCleared(today());
   return Math.min(1, Math.min(streak,30)/30*0.5 + (full?0.5:0)); }
 function effWeights(){ const b=luckScore()*12; return {N:Math.max(20,49.5-b), R:30, SR:15+b*0.5, SSR:5+b*0.4, UR:0.5+b*0.1}; }
 function rollRarity(){ const w=effWeights(); const sum=w.N+w.R+w.SR+w.SSR+w.UR; let roll=Math.random()*sum;
@@ -994,7 +1031,7 @@ function testNotify(){ if(!("Notification" in window))return alert("未対応で
 let remTimer=null;
 function scheduleReminder(){ if(remTimer)clearTimeout(remTimer); if(!S.reminder||Notification.permission!=="granted")return;
   const [h,m]=S.reminder.split(":").map(Number); const now=new Date(); const next=new Date(); next.setHours(h,m,0,0); if(next<=now)next.setDate(next.getDate()+1);
-  remTimer=setTimeout(()=>{ const info=menuFor(today()); const ch=S.checks[today()]||[]; const done=info.tasks.every(t=>ch.includes(t.id));
+  remTimer=setTimeout(()=>{ const done=dayCleared(today());
     if(!done && Notification.permission==="granted"){ try{ new Notification(S.petName+"が待ってるよ 🔥",{body:"今日のメニューをやって、連続記録をのばそう!"}); }catch(e){} } scheduleReminder(); }, Math.min(next-now,2147483000)); }
 
 /* ========== データ管理 ========== */
