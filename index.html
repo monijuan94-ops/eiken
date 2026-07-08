@@ -389,6 +389,7 @@ function initS(){
   S.coinDays=S.coinDays||{}; S.milestones=S.milestones||{};
   S.xp=S.xp||0; S.xpDays=S.xpDays||{}; S.cardCount=S.cardCount||{}; S.petName=S.petName||"モジャ"; S.sound=(S.sound!==false);
   S.reminder=S.reminder||null; S.firstDay=S.firstDay||null;
+  S.listenRate=S.listenRate||0.95; if(S.voiceName===undefined)S.voiceName=null;
   // 新: コレクション / 装備
   S.owned=S.owned||{sp_blob:1}; S.owned.sp_blob=S.owned.sp_blob||1;
   S.shards=S.shards||0; S.pullCount=S.pullCount||0; S.sinceSR=S.sinceSR||0; S.sinceSSR=S.sinceSSR||0;
@@ -1040,13 +1041,36 @@ function openPractice(kind){
   if(kind==="listening")setTimeout(()=>speakScript(ctx.text),400);
 }
 function closeModal(){ document.getElementById("modal").style.display="none"; try{speechSynthesis.cancel();}catch(e){} }
-function speakScript(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text.replace(/A:|B:/g,". ")); u.lang="en-US"; u.rate=0.92; speechSynthesis.speak(u);}catch(e){ quizState.showScript=true; renderQuiz(); } }
+function getVoice(){ if(!("speechSynthesis" in window))return null; const vs=speechSynthesis.getVoices(); if(!vs.length)return null;
+  if(S.voiceName){ const m=vs.find(v=>v.name===S.voiceName); if(m)return m; }
+  const en=vs.filter(v=>/^en/i.test(v.lang)); if(!en.length)return vs[0];
+  const rank=v=>{ const n=v.name.toLowerCase(); let s=0; ["natural","neural","enhanced","premium","siri","samantha","google us english","aria","jenny","libby"].forEach((k,i)=>{ if(n.includes(k))s+=12-i; }); if(/en[-_]us/i.test(v.lang))s+=4; if(v.localService===false)s+=2; return s; };
+  en.sort((a,b)=>rank(b)-rank(a)); return en[0]; }
+function fillVoices(){ const sel=document.getElementById("voiceSel"); if(!sel)return; const vs=(("speechSynthesis" in window)?speechSynthesis.getVoices():[]).filter(v=>/^en/i.test(v.lang));
+  if(!vs.length){ sel.innerHTML='<option>読み込み中…（再生を押すと反映）</option>'; return; }
+  const cur=(getVoice()||{}).name;
+  sel.innerHTML=vs.map(v=>`<option value="${v.name}" ${v.name===cur?"selected":""}>${v.name}${v.localService===false?" ✨":""}</option>`).join(""); }
+function fillVoicesInit(){ const vs=(("speechSynthesis" in window)?speechSynthesis.getVoices():[]).filter(v=>/^en/i.test(v.lang));
+  if(!vs.length)return '<option>読み込み中…（再生を押すと反映）</option>';
+  const cur=(getVoice()||{}).name;
+  return vs.map(v=>`<option value="${v.name}" ${v.name===cur?"selected":""}>${v.name}${v.localService===false?" ✨":""}</option>`).join(""); }
+function setVoice(){ S.voiceName=document.getElementById("voiceSel").value; save(); if(quizState&&quizState.ctx)speakScript(quizState.ctx.text); }
+function speakScript(text, rate){ try{ speechSynthesis.cancel(); const v=getVoice(); const r=rate||S.listenRate||0.95;
+  const segs=text.replace(/A:|B:/g," ").match(/[^.!?]+[.!?]*/g)||[text];
+  segs.forEach(seg=>{ if(!seg.trim())return; const u=new SpeechSynthesisUtterance(seg.trim()); u.lang="en-US"; if(v)u.voice=v; u.rate=r; speechSynthesis.speak(u); });
+}catch(e){ if(quizState){quizState.showScript=true; renderQuiz();} } }
 function renderQuiz(){
   const q=quizState; const label=q.kind==="reading"?"読解":q.kind==="listening"?"リスニング":"模試ミニ";
   let h=`<div class="modal-card"><div class="modal-head"><b>${label}</b><span class="mclose" onclick="closeModal()">✕</span></div>`;
   if(q.ctx){
     if(q.ctx.type==="text") h+=`<div class="passage">${q.ctx.text}</div>`;
-    else h+=`<div class="center" style="margin-bottom:14px"><button class="btn" onclick="speakScript(quizState.ctx.text)">🔊 音声を再生</button> <button class="btn ghost sm" onclick="quizState.showScript=!quizState.showScript;renderQuiz()">${q.showScript?"英文を隠す":"英文を見る"}</button>${q.showScript?`<div class="passage" style="margin-top:10px;text-align:left">${q.ctx.text}</div>`:""}</div>`;
+    else h+=`<div class="center" style="margin-bottom:14px">
+      <button class="btn" onclick="speakScript(quizState.ctx.text)">🔊 再生</button>
+      <button class="btn ghost sm" onclick="speakScript(quizState.ctx.text,0.7)">🐢 ゆっくり</button>
+      <button class="btn ghost sm" onclick="quizState.showScript=!quizState.showScript;renderQuiz()">${q.showScript?"英文を隠す":"英文を見る"}</button>
+      <div style="margin-top:8px"><select id="voiceSel" onchange="setVoice()" style="font-size:12px; max-width:100%">${fillVoicesInit()}</select></div>
+      <div style="font-size:10px; color:var(--sub); margin-top:4px">✨=高品質(端末内蔵)。iPhoneは「設定→アクセシビリティ→読み上げ」でEnhanced音声を追加すると更に自然に。</div>
+      ${q.showScript?`<div class="passage" style="margin-top:10px;text-align:left">${q.ctx.text}</div>`:""}</div>`;
   }
   q.qs.forEach((qq,qi)=>{
     h+=`<div class="qblock"><div class="qq">Q${qi+1}. ${qq.q}</div>`;
@@ -1058,6 +1082,7 @@ function renderQuiz(){
   if(q.answered>=q.qs.length){ h+=`<div class="center" style="margin-top:6px"><p style="font-weight:800;margin-bottom:10px">結果: ${q.correct} / ${q.qs.length} 正解 🎉</p><button class="btn green" style="width:100%" onclick="finishQuiz()">完了する</button></div>`; }
   h+=`</div>`;
   document.getElementById("modal").innerHTML=h;
+  if(q.ctx && q.ctx.type==="audio") fillVoices();
 }
 function pickAns(qi,ci){ const q=quizState; if(q.picked[qi]!=null)return; q.picked[qi]=ci; q.answered++;
   if(ci===q.qs[qi].a){q.correct++; beep(760,.05);} else beep(300,.08); vibe(8); renderQuiz(); }
@@ -1105,6 +1130,7 @@ document.getElementById("soundLbl").textContent="🔊 効果音: "+(S.sound?"ON"
 updateStats(); renderHome(); newPrompt(); newSpeak(); renderWriteHist();
 if(S.reminder)scheduleReminder();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden)renderHome(); });
+if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{ if(quizState&&quizState.ctx&&quizState.ctx.type==="audio")fillVoices(); }; }catch(e){} }
 </script>
 </body>
 </html>
