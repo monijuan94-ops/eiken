@@ -163,6 +163,9 @@
   .witem .eqmark{position:absolute; top:3px; right:5px; font-size:11px; color:var(--green);}
   .witem .xchg{position:absolute; bottom:3px; left:0; right:0; font-size:9px; color:var(--amber);}
   .install-bar{background:linear-gradient(135deg,#22314f,#2c3f66); border:1px solid var(--accent); border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; font-size:13px;}
+  .course-tabs{display:flex; gap:8px; margin-bottom:12px;}
+  .course-tab{flex:1; background:var(--card2); border:1px solid var(--border); color:var(--sub); border-radius:12px; padding:10px 6px; font-size:13px; font-weight:700; cursor:pointer; transition:.15s;}
+  .course-tab.active{background:var(--accent); color:#fff; border-color:var(--accent);}
 
   /* ===== オーバーレイ演出 ===== */
   #fx{position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden;}
@@ -196,6 +199,10 @@
 <main>
   <!-- ========== ホーム ========== -->
   <div class="tab-pane active" id="pane-home">
+    <div class="course-tabs">
+      <button class="course-tab" data-c="en" onclick="switchCourse('en')">🇬🇧 英語 (英検)</button>
+      <button class="course-tab" data-c="es" onclick="switchCourse('es')">🇪🇸 スペイン語 (西検)</button>
+    </div>
     <div id="installBox"></div>
     <div class="card hero">
       <div class="petstage bg_none" id="petStage">
@@ -369,14 +376,19 @@
 <footer>データはこの端末のブラウザ内に保存されます。機種変更時は「記録」→バックアップを。</footer>
 
 <script>
+/* ========== コース(言語) ========== */
+let COURSE = localStorage.getItem("app_course")||"en";
+let LS_KEY = (COURSE==="es") ? "eiken_es_v1" : "eiken_p1_v3";
+let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG;
+function switchCourse(c){ if(c===COURSE)return; localStorage.setItem("app_course",c); location.reload(); }
+
 /* ========== ストレージ ========== */
-const LS_KEY="eiken_p1_v3";
 let S=load();
 function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
 function save(){localStorage.setItem(LS_KEY,JSON.stringify(S));}
 function initS(){
-  // 旧バージョンから移行(初回のみ)
-  if(!localStorage.getItem(LS_KEY)){
+  // 旧バージョンから移行(初回のみ・英語コースのみ)
+  if(COURSE==="en" && !localStorage.getItem(LS_KEY)){
     for(const ok of ["eiken_p1_v2","eiken_p1_v1"]){
       try{const old=JSON.parse(localStorage.getItem(ok)); if(old){
         ["checks","cards","writings","weak","coins","shields","shieldUsed","coinDays","xp","xpDays","milestones","petName","sound","reminder","firstDay"].forEach(k=>{if(old[k]!=null&&S[k]==null)S[k]=old[k];});
@@ -711,7 +723,7 @@ function saveWeak(){const v=document.getElementById("weakSkill").value; if(!v)re
 function renderWeak(){document.getElementById("weakHist").innerHTML=S.weak.map(w=>`<div class="hist-item">${w.d} → 重点: <b>${w.s}</b></div>`).join("");}
 
 /* ========== 単語データ(準1級頻出 188語) ========== */
-const VOCAB=[
+const EN_VOCAB=[
 ["abolish","〜を廃止する","動"],["accommodate","〜を収容する・対応する","動"],["accumulate","〜を蓄積する","動"],["acknowledge","〜を認める","動"],["advocate","〜を提唱する/擁護者","動/名"],["allocate","〜を割り当てる","動"],["alleviate","〜を緩和する","動"],["anticipate","〜を予期する","動"],["assess","〜を評価・査定する","動"],["attribute","〜のせいと考える/特性","動/名"],
 ["boost","〜を押し上げる・高める","動"],["cite","〜を引用する・挙げる","動"],["collide","衝突する","動"],["compensate","補償する・埋め合わせる","動"],["compile","〜を編集・まとめる","動"],["comply","(規則に)従う","動"],["conceive","〜を思いつく・想像する","動"],["condemn","〜を非難する","動"],["confine","〜を制限する・閉じ込める","動"],["confront","〜に立ち向かう・直面する","動"],
 ["contemplate","〜を熟考する","動"],["contradict","〜と矛盾する・否定する","動"],["convey","〜を伝える・運ぶ","動"],["cultivate","〜を耕す・育む","動"],["deceive","〜をだます","動"],["dedicate","〜を捧げる","動"],["degrade","〜を劣化させる","動"],["deprive","〜から奪う","動"],["designate","〜を指定・任命する","動"],["deteriorate","悪化する","動"],
@@ -766,7 +778,7 @@ function nextCard(){
     return `<div class="vq-choice" id="vc${k}" onclick="chooseVocab(${k})">${label}</div>`;
   }).join("");
 }
-function speakWord(ev){ if(ev)ev.stopPropagation(); try{ const v=VOCAB[curCard]; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(v[0]); u.lang="en-US"; u.rate=0.9; speechSynthesis.speak(u);}catch(e){} }
+function speakWord(ev){ if(ev)ev.stopPropagation(); try{ const v=VOCAB[curCard]; const vo=getVoice(); speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(v[0]); u.lang=TTS_LANG||"en-US"; if(vo)u.voice=vo; u.rate=0.85; speechSynthesis.speak(u);}catch(e){} }
 function chooseVocab(k){
   if(vAnswered)return; vAnswered=true;
   const oi=vqData.opts[k]; const correct=(oi===curCard); const t=today();
@@ -786,7 +798,7 @@ function chooseVocab(k){
 function extraNew(){extraAllowance+=10; renderFlash();}
 
 /* ========== 作文/面接データ ========== */
-const ESSAYS=[
+const EN_ESSAYS=[
 ["Agree or disagree: Japan should accept more foreign workers","Aging society / Cultural diversity / Job competition / Social services"],
 ["Should university education be free for all students?","Equal opportunity / Government spending / Quality of education / Personal responsibility"],
 ["Agree or disagree: Remote work is beneficial for society","Work-life balance / Productivity / Communication / Regional revitalization"],
@@ -799,15 +811,15 @@ const ESSAYS=[
 ["Should the retirement age be raised?","Labor shortage / Health / Pension system / Youth employment"],
 ["Should cities restrict the use of private cars in city centers?","Air quality / Public transportation / Local businesses / Convenience"],
 ["Agree or disagree: Cash will disappear in the near future","Convenience / Security / Elderly people / Natural disasters"]];
-const SUMMARY_NOTE="過去問または問題集の英文(200語程度)を手元に用意し、60〜70語で要約。手順: ①各段落の主旨を1文ずつ抜き出す ②接続語(However, As a result など)でつなぐ ③本文の表現をそのまま使わず言い換える。";
-const NARRATIONS=[
+const EN_SUMMARY_NOTE="過去問または問題集の英文(200語程度)を手元に用意し、60〜70語で要約。手順: ①各段落の主旨を1文ずつ抜き出す ②接続語(However, As a result など)でつなぐ ③本文の表現をそのまま使わず言い換える。";
+const EN_NARRATIONS=[
 "あなたは4コマイラストを見て物語を作ります(過去問/予想問題集のカードを使用)。1文目は指定文で始め、各コマ2〜3文・過去形で2分間話す。",
 "練習用: 『家族がレストランで食事を注文しすぎて食べ残しが出た→もったいないと感じた→次の週、適量を注文した』を4場面に分けて2分で語る。",
 "練習用: 『男性が通勤で車を使っていた→渋滞でストレス→自転車通勤に切り替えた→健康になり満足』を4場面に分けて2分で語る。"];
-const QAS=["Do you think companies should allow employees to work from home?","Should people stop using products made from animals?","Do you think the government should spend more money on education?","Is it important for children to learn a foreign language at an early age?","Do you think social media has a negative influence on young people?","Should Japan rely more on renewable energy?","Do you think people today read fewer books than before? Is that a problem?","Should parents limit the time their children spend on smartphones?","Do you think tourism does more good than harm to local communities?","Is a cashless society a good thing for everyone?","Do you think convenience stores should stay open 24 hours a day?","Should university students be required to study abroad?"];
+const EN_QAS=["Do you think companies should allow employees to work from home?","Should people stop using products made from animals?","Do you think the government should spend more money on education?","Is it important for children to learn a foreign language at an early age?","Do you think social media has a negative influence on young people?","Should Japan rely more on renewable energy?","Do you think people today read fewer books than before? Is that a problem?","Should parents limit the time their children spend on smartphones?","Do you think tourism does more good than harm to local communities?","Is a cashless society a good thing for everyone?","Do you think convenience stores should stay open 24 hours a day?","Should university students be required to study abroad?"];
 
 /* ========== 解答例(オリジナル・作文) ========== */
-const ESSAY_MODELS=[
+const EN_ESSAY_MODELS=[
 "I agree that Japan should accept more foreign workers. First, Japan's population is aging rapidly, and many industries such as nursing and construction already face serious labor shortages. Accepting more foreign workers would help keep these essential services running. Second, workers from different countries bring new ideas and cultures, which can make Japanese society more diverse and open. Some people worry about competition for jobs, but foreign workers usually fill positions that are hard to staff. In conclusion, given the aging society and the labor shortage, Japan should welcome more foreign workers.",
 "I believe university education should be free for all students. First, free education would give everyone an equal chance to succeed, regardless of their family's income. Talented students from poor households could attend university without taking on huge debts. Second, a highly educated population benefits the whole country, because skilled workers strengthen the economy and pay more taxes in the future. Some argue that free education is too expensive, but the long-term returns are worth the cost. In conclusion, because it promotes equal opportunity and a stronger economy, university education should be free.",
 "I agree that remote work is beneficial for society. First, it improves work-life balance, since employees save the hours they would spend commuting and can use that time for family or rest. Second, remote work can help revitalize rural areas, because people no longer need to live in crowded cities to keep good jobs. Critics say communication can suffer, but online tools have made teamwork easier than before. In conclusion, thanks to better work-life balance and regional benefits, remote work is good for society.",
@@ -821,13 +833,13 @@ const ESSAY_MODELS=[
 "I agree that cities should restrict the use of private cars in their centers. First, this would greatly improve air quality, since traffic is one of the biggest sources of pollution in urban areas. Second, fewer cars would make streets safer and more pleasant for pedestrians and cyclists. Some worry that local businesses will suffer, but good public transport can bring even more customers. In conclusion, restricting private cars would make city centers healthier and more livable.",
 "I do not think cash will completely disappear in the near future. First, many elderly people are not comfortable with digital payments and still rely on cash for daily shopping. Second, cash is essential during emergencies such as earthquakes or power failures, when electronic systems may stop working. Of course, cashless payment is growing quickly because it is convenient. However, convenience alone is not enough to remove cash entirely. In conclusion, while digital payment will keep spreading, cash will remain necessary for some people and situations."
 ];
-const SUMMARY_MODEL="<b>要約は原文がないと作れない</b>ので、練習用の例を示します。<br><br><b>原文の要点(約200語の英文)</b>: ①多くの都市が使われていない屋上を小さな農園に変えている ②利点は「食料輸送による汚染の削減」と「建物を涼しく保つこと」 ③批判は「生産量が少なく都市全体を養えない」 ④それでも住民は人をつなぐ緑地として評価している。<br><br><b>要約の解答例(約65語)</b>:<br>These days, many cities are turning unused rooftops into small farms. Supporters say this cuts pollution from transporting food and helps keep buildings cool. Critics point out that these farms produce too little to feed a whole city. Even so, many residents value them as green spaces that bring the community together.";
-const NARR_MODELS=[
+const EN_SUMMARY_MODEL="<b>要約は原文がないと作れない</b>ので、練習用の例を示します。<br><br><b>原文の要点(約200語の英文)</b>: ①多くの都市が使われていない屋上を小さな農園に変えている ②利点は「食料輸送による汚染の削減」と「建物を涼しく保つこと」 ③批判は「生産量が少なく都市全体を養えない」 ④それでも住民は人をつなぐ緑地として評価している。<br><br><b>要約の解答例(約65語)</b>:<br>These days, many cities are turning unused rooftops into small farms. Supporters say this cuts pollution from transporting food and helps keep buildings cool. Critics point out that these farms produce too little to feed a whole city. Even so, many residents value them as green spaces that bring the community together.";
+const EN_NARR_MODELS=[
 "One day, a woman saw a poster for a weekend event to clean a local park. She decided to join because she wanted to help her community. On Saturday, she and many other volunteers picked up trash and planted flowers together. In the end, the park looked beautiful, and she felt proud of what they had achieved.",
 "One evening, a family went to a restaurant and ordered a large amount of food. However, they could not finish everything, and a lot of food was left on the table. The mother felt sorry about wasting so much and thought they should be more careful. The next week, they ordered only what they could eat, and they were happy that nothing was wasted.",
 "A man used to drive his car to work every morning. One day, he got stuck in heavy traffic and felt very stressed and tired. After thinking about it, he decided to start commuting by bicycle instead. As a result, he became healthier and felt much more relaxed on his way to the office."
 ];
-const QA_MODELS=[
+const EN_QA_MODELS=[
 "Yes, I think so. Working from home lets employees save commuting time and enjoy a better work-life balance. As long as they communicate well online, they can be just as productive as in the office.",
 "I don't think people need to stop completely, but they should reduce their use. Many animal products cause environmental and ethical problems, so choosing alternatives when possible is a good idea. Still, forcing everyone to stop would be unrealistic.",
 "Yes, I believe the government should. Education is an investment in the country's future, because well-educated people support the economy and society. Spending more on teachers and schools would benefit everyone in the long run.",
@@ -846,7 +858,7 @@ const QA_MODELS=[
 let wTimer=null, wSec=1500, wRunning=false, curEssay=0;
 function newPrompt(){ const mode=document.getElementById("writeMode").value; const box=document.getElementById("writePrompt");
   if(mode==="essay"){ curEssay=Math.floor(Math.random()*ESSAYS.length); const e=ESSAYS[curEssay];
-    box.innerHTML=`<b>TOPIC:</b> ${e[0]}<div class="pts"><b>POINTS:</b> ${e[1]}<br>構成: 序論1文→理由①2文→理由②2文→結論1文(120〜150語)</div>`;
+    box.innerHTML=`<b>TOPIC:</b> ${e[0]}<div class="pts"><b>POINTS:</b> ${e[1]}<br>${ESSAY_HINT}</div>`;
   }else{ box.innerHTML=`<b>要約練習</b><div class="pts">${SUMMARY_NOTE}</div>`; }
   const wm=document.getElementById("writeModel"); if(wm)wm.style.display="none"; resetWriteTimer(); }
 function toggleWriteModel(){ const el=document.getElementById("writeModel");
@@ -967,7 +979,7 @@ function wtap(id){ const it=ITEM[id]; const slot=equipSlot(it.cat); const owned=
 }
 
 /* ========== 演習コンテンツ(オリジナル) ========== */
-const READINGS=[
+const EN_READINGS=[
  {passage:"When many companies switched to remote work, employees welcomed the freedom to manage their own schedules. However, some managers soon noticed a hidden problem. Without casual conversations in the office, new staff found it harder to ask small questions, and their training slowed down. To solve this, several firms now hold short online meetings each morning. These meetings are not meant to check productivity, but to give younger workers a chance to stay connected and learn from experienced colleagues.",
   q:[{q:"What problem did some managers notice?",choices:["New employees learned more slowly.","Workers refused to attend meetings.","Productivity became impossible to measure.","Employees demanded higher salaries."],a:0},
      {q:"Why do the firms hold morning meetings?",choices:["To check how much work is done","To help newer workers stay connected","To reduce the number of employees","To replace office buildings"],a:1}]},
@@ -1017,7 +1029,7 @@ const READINGS=[
   q:[{q:"What is one advantage of e-books mentioned?",choices:["One device can hold hundreds of titles","They never run out of battery","They are always cheaper","They improve eyesight"],a:0},
      {q:"Why do some readers prefer paper books?",choices:["They are easier on the eyes and to focus on","They are lighter","They hold more books","They are free"],a:0}]}
 ];
-const LISTENINGS=[
+const EN_LISTENINGS=[
  {script:"Attention, library visitors. Please note that the third-floor reading room will be closed this weekend for cleaning. All study desks on that floor will be unavailable from Friday evening until Monday morning. If you need a quiet place to study, the reading area on the first floor will remain open as usual, and extra seats have been added there. We apologize for any inconvenience.",
   q:[{q:"Why will the third-floor reading room be closed?",choices:["For cleaning","For a book sale","For a meeting","For roof repairs"],a:0},
      {q:"What can visitors do instead?",choices:["Use the first-floor reading area","Study outside the building","Come back next month","Reserve a room online"],a:0}]},
@@ -1079,7 +1091,7 @@ const LISTENINGS=[
   q:[{q:"What is the library opening next month?",choices:["A new children's section","A coffee shop","A cinema","A gym"],a:0},
      {q:"What will happen to celebrate?",choices:["Free story-telling events every weekend","A book sale","A parade","A quiz competition"],a:0}]}
 ];
-const MOCKQS=[
+const EN_MOCKQS=[
  {q:"The government finally decided to ___ the outdated law.",choices:["accumulate","exaggerate","abolish","hesitate"],a:2},
  {q:"This hotel can ___ up to five hundred guests.",choices:["condemn","accommodate","distort","neglect"],a:1},
  {q:"Over the years, she managed to ___ a large amount of savings.",choices:["abolish","deceive","provoke","accumulate"],a:3},
@@ -1122,6 +1134,107 @@ const MOCKQS=[
  {q:"The government launched a program to ___ poverty in the region.",choices:["deceive","obscure","tackle","exaggerate"],a:2}
 ];
 
+/* ========== スペイン語コース(DELE A2 / 西検5・4級) ========== */
+const EN_ESSAY_HINT="構成: 序論1文→理由①2文→理由②2文→結論1文(120〜150語)";
+const ES_ESSAY_HINT="上の書き出し(POINTS)を使って、まず辞書なしで書いてみよう。書けたら解答例と比べて表現を1つ覚える。";
+const ES_VOCAB=[
+["casa","家","名"],["agua","水","名"],["comida","食べ物・食事","名"],["tiempo","時間・天気","名"],["día","日・昼","名"],["noche","夜","名"],["año","年","名"],["hombre","男性","名"],["mujer","女性","名"],["niño","子ども","名"],
+["amigo","友達","名"],["familia","家族","名"],["ciudad","都市","名"],["país","国","名"],["escuela","学校","名"],["profesor","先生","名"],["libro","本","名"],["mesa","テーブル・机","名"],["puerta","ドア","名"],["coche","車","名"],
+["calle","通り","名"],["dinero","お金","名"],["tienda","店","名"],["playa","浜・ビーチ","名"],["película","映画","名"],["música","音楽","名"],["fiesta","パーティー・祭り","名"],["trabajo","仕事","名"],["gato","猫","名"],["perro","犬","名"],
+["ser","〜である","動"],["estar","〜にいる・ある","動"],["tener","持っている","動"],["hacer","する・作る","動"],["ir","行く","動"],["comer","食べる","動"],["beber","飲む","動"],["vivir","住む・生きる","動"],["hablar","話す","動"],["estudiar","勉強する","動"],
+["comprar","買う","動"],["leer","読む","動"],["escribir","書く","動"],["querer","欲しい・愛する","動"],["poder","できる","動"],["ver","見る","動"],["dormir","眠る","動"],["viajar","旅行する","動"],["gustar","好きである","動"],["trabajar","働く","動"],
+["grande","大きい","形"],["pequeño","小さい","形"],["bueno","良い","形"],["malo","悪い","形"],["nuevo","新しい","形"],["bonito","きれいな","形"],["fácil","簡単な","形"],["difícil","難しい","形"],["caro","(値段が)高い","形"],["barato","安い","形"],
+["hoy","今日","副"],["mañana","明日・朝","名"],["ayer","昨日","副"],["siempre","いつも","副"],["muy","とても","副"],["también","〜もまた","副"],["pero","しかし","接"],["porque","なぜなら","接"],["gracias","ありがとう","表現"],["hola","こんにちは","表現"]
+];
+const ES_READINGS=[
+ {passage:"Me llamo Ana y vivo en Madrid con mi familia. Mi padre es profesor y mi madre trabaja en un hospital. Tengo un hermano pequeño que se llama Luis. Los fines de semana comemos juntos y a veces vamos al parque. Me gusta mucho mi familia.",
+  q:[{q:"アナの父親の仕事は?",choices:["先生","医者","店員","運転手"],a:0},{q:"週末に家族ですることは?",choices:["一緒に食事する","映画を見る","旅行する","買い物する"],a:0}]},
+ {passage:"Todos los días me levanto a las siete. Desayuno café con leche y pan. Luego voy a la escuela en autobús. Por la tarde estudio en la biblioteca y hago los deberes. Por la noche ceno con mi familia y me acuesto a las once.",
+  q:[{q:"何時に起きますか?",choices:["7時","8時","6時","11時"],a:0},{q:"学校へは何で行きますか?",choices:["バス","車","自転車","徒歩"],a:0}]},
+ {passage:"En España, la comida es muy importante. La gente come a las dos o las tres de la tarde, más tarde que en otros países. Un plato famoso es la paella, que lleva arroz, verduras y a veces pollo o marisco. También son populares las tapas, pequeñas porciones de comida.",
+  q:[{q:"スペインで昼食は何時ごろ?",choices:["午後2〜3時","正午","午前11時","午後5時"],a:0},{q:"パエリアに入っているものは?",choices:["米・野菜など","パンだけ","果物","スープ"],a:0}]},
+ {passage:"Vivo en una ciudad pequeña cerca del mar. No es muy grande, pero es muy bonita. Hay una plaza en el centro con muchos cafés. En verano, mucha gente va a la playa. Me gusta vivir aquí porque es tranquilo y la gente es amable.",
+  q:[{q:"この街はどこの近くにありますか?",choices:["海","山","川","砂漠"],a:0},{q:"話者がここを気に入っている理由は?",choices:["静かで人が親切","大きいから","にぎやかだから","有名だから"],a:0}]},
+ {passage:"El verano pasado viajé a México con dos amigos. Fue un viaje fantástico. Visitamos museos, comimos comida deliciosa y conocimos a mucha gente simpática. También fuimos a la playa y nadamos en el mar. Quiero volver a México algún día.",
+  q:[{q:"誰と旅行しましたか?",choices:["2人の友達","家族","一人で","同僚"],a:0},{q:"話者は今後どうしたい?",choices:["またメキシコに行きたい","もう行きたくない","引っ越したい","仕事したい"],a:0}]}
+];
+const ES_LISTENINGS=[
+ {script:"A: Hola, buenos días. ¿Qué desea? B: Buenos días. Quiero un café con leche, por favor. A: ¿Algo más? B: Sí, también un croissant. A: Muy bien. Son tres euros con cincuenta. B: Aquí tiene. Gracias.",
+  q:[{q:"客が注文したものは?",choices:["カフェオレとクロワッサン","お茶とケーキ","水だけ","サンドイッチ"],a:0},{q:"値段はいくら?",choices:["3.50ユーロ","5ユーロ","2ユーロ","10ユーロ"],a:0}]},
+ {script:"A: Buenas tardes. ¿Puedo ayudarle? B: Sí, busco una camiseta azul. A: ¿Qué talla necesita? B: La talla mediana, por favor. A: Aquí tiene. Cuesta quince euros. B: Perfecto, me la llevo.",
+  q:[{q:"客が探しているものは?",choices:["青いTシャツ","赤い靴","帽子","ズボン"],a:0},{q:"サイズは?",choices:["M(中)","S(小)","L(大)","XL"],a:0}]},
+ {script:"Hola, me llamo Carlos. Soy de Argentina, pero ahora vivo en Barcelona. Tengo veinticinco años y soy estudiante de medicina. En mi tiempo libre me gusta jugar al fútbol y escuchar música. Encantado de conoceros.",
+  q:[{q:"カルロスの出身は?",choices:["アルゼンチン","スペイン","メキシコ","ペルー"],a:0},{q:"彼の趣味は?",choices:["サッカーと音楽","料理と読書","映画と旅行","絵と写真"],a:0}]},
+ {script:"Atención, pasajeros. El tren con destino a Sevilla saldrá del andén número cuatro a las diez y media. Por favor, tengan sus billetes preparados. El viaje dura unas dos horas. Gracias por viajar con nosotros.",
+  q:[{q:"セビリア行きの列車は何番線から?",choices:["4番線","2番線","10番線","3番線"],a:0},{q:"所要時間は?",choices:["約2時間","約30分","約4時間","約1時間"],a:0}]},
+ {script:"A: Hola, María. ¿Quieres venir a mi fiesta el sábado? B: ¡Hola! Sí, me encantaría. ¿A qué hora es? A: A las ocho de la noche, en mi casa. B: Perfecto. ¿Llevo algo? A: No hace falta, solo ven. B: Vale, ¡hasta el sábado!",
+  q:[{q:"パーティーはいつ?",choices:["土曜の夜8時","金曜の昼","日曜の朝","木曜の夜"],a:0},{q:"マリアは何か持っていく必要がある?",choices:["必要ない","飲み物","食べ物","プレゼント"],a:0}]}
+];
+const ES_MOCKQS=[
+ {q:"Yo ___ estudiante de español.",choices:["soy","eres","es","son"],a:0},
+ {q:"Ella ___ en Madrid.",choices:["vivo","vives","vive","viven"],a:2},
+ {q:"Nosotros ___ café todas las mañanas.",choices:["bebo","bebemos","bebe","beben"],a:1},
+ {q:"A mí ___ gusta mucho la música.",choices:["me","te","le","nos"],a:0},
+ {q:"Los libros están ___ la mesa.",choices:["en","a","de","con"],a:0},
+ {q:"Hace mucho ___ hoy; necesito una chaqueta.",choices:["calor","sol","viento","frío"],a:3},
+ {q:"Voy ___ supermercado a comprar comida.",choices:["a la","al","de","en"],a:1},
+ {q:"Mi hermana es más alta ___ yo.",choices:["que","de","como","a"],a:0},
+ {q:"¿___ años tienes? — Tengo veinte.",choices:["Cómo","Dónde","Cuántos","Cuándo"],a:2},
+ {q:"Ayer ___ al cine con mis amigos.",choices:["voy","fui","iré","ir"],a:1},
+ {q:"Este restaurante es muy ___; no tengo mucho dinero.",choices:["caro","barato","grande","nuevo"],a:0},
+ {q:"Por favor, ___ la puerta. Hace frío.",choices:["come","abre","cierra","habla"],a:2}
+];
+const ES_ESSAYS=[
+ ["自己紹介を5文で書く（名前・出身・仕事や勉強・趣味・家族）","Me llamo… / Soy de… / Trabajo/Estudio… / Me gusta… / Tengo…"],
+ ["昨日したことを4文で書く（過去形の練習）","Ayer… / Por la mañana… / Después… / Por la noche…"],
+ ["自分の街や家族について5文で書く","Vivo en… / Es… / Hay… / Me gusta… porque…"],
+ ["好きな食べ物とその理由を3文で書く","Mi comida favorita es… / Me gusta porque… / La como…"]
+];
+const ES_ESSAY_MODELS=[
+ "Me llamo Yuki. Soy de Japón, de una ciudad cerca de Kioto. Estudio español en la universidad. Me gusta viajar y escuchar música. Tengo una hermana y un perro.",
+ "Ayer fue un día tranquilo. Por la mañana estudié español en casa. Después comí con un amigo en un restaurante. Por la noche vi una película y me acosté temprano.",
+ "Vivo en Osaka, una ciudad grande de Japón. Es una ciudad muy animada y hay mucha comida deliciosa. Hay tiendas, parques y muchos restaurantes. Me gusta vivir aquí porque siempre hay algo que hacer.",
+ "Mi comida favorita es la paella. Me gusta porque tiene arroz, verduras y marisco, y es muy sabrosa. La como en un restaurante español los fines de semana."
+];
+const ES_SUMMARY_NOTE="A2では長い要約より短い作文が効果的。上の『作文』お題から1つ選び、辞書を使わずまず書く→解答例と比べて表現を1つ覚えよう。";
+const ES_SUMMARY_MODEL="<b>短い作文の例(自己紹介)</b>:<br>Me llamo Ken. Soy de Tokio, en Japón. Trabajo en una oficina y estudio español por las noches. Me gusta el fútbol y la comida española. Tengo una hermana mayor.";
+const ES_NARRATIONS=[
+ "自分の1日の流れをスペイン語で1〜2分話す（現在形: me levanto, desayuno, voy…）。",
+ "先週末にしたことを話す（過去形: fui, comí, vi…）。",
+ "自分の家族を紹介する（Mi padre es…, Tengo…）。"
+];
+const ES_NARR_MODELS=[
+ "Todos los días me levanto a las siete. Desayuno café y pan. Luego voy a la universidad. Por la tarde estudio y hago deporte. Por la noche ceno con mi familia y leo un poco antes de dormir.",
+ "El fin de semana pasado fui a la playa con mis amigos. Comimos en un restaurante y nadamos en el mar. Por la tarde tomamos un café y hablamos mucho. Fue un día muy divertido.",
+ "Mi familia es pequeña. Mi padre es profesor y mi madre trabaja en una oficina. Tengo una hermana menor. También tenemos un gato. Vivimos juntos en una casa cerca del parque."
+];
+const ES_QAS=[
+ "¿Cómo te llamas y de dónde eres?",
+ "¿Qué haces normalmente los fines de semana?",
+ "¿Cuál es tu comida favorita y por qué?",
+ "¿Qué te gusta hacer en tu tiempo libre?"
+];
+const ES_QA_MODELS=[
+ "Me llamo Ken y soy de Japón, de Tokio. Vivo allí con mi familia.",
+ "Los fines de semana normalmente descanso, veo películas y salgo con mis amigos. A veces estudio español.",
+ "Mi comida favorita es el sushi. Me gusta porque es fresco y sano, y me recuerda a mi país.",
+ "En mi tiempo libre me gusta leer, escuchar música y pasear por el parque."
+];
+
+const COURSES={
+ en:{ttsLang:"en-US", vocab:EN_VOCAB, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
+ es:{ttsLang:"es-ES", vocab:ES_VOCAB, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
+};
+function applyCourse(c){ const d=COURSES[c]||COURSES.en;
+  TTS_LANG=d.ttsLang; VOCAB=d.vocab; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint;
+  NARRATIONS=d.narrations; NARR_MODELS=d.narrModels; QAS=d.qas; QA_MODELS=d.qaModels; READINGS=d.readings; LISTENINGS=d.listenings; MOCKQS=d.mockqs; }
+function relabelForCourse(){
+  const wm=document.getElementById("writeMode");
+  if(wm){ if(COURSE==="es"){ wm.options[0].text="作文(自由・タイマー20分)"; wm.options[1].text="短い作文(日記・10分)"; } }
+  document.querySelectorAll(".course-tab").forEach(b=>b.classList.toggle("active", b.dataset.c===COURSE));
+  document.title = COURSE==="es" ? "スペイン語 特訓" : "英検準1級 特訓";
+}
+
 /* ========== 演習エンジン(モーダル) ========== */
 let quizState=null;
 function openPractice(kind){
@@ -1135,23 +1248,23 @@ function openPractice(kind){
   if(kind==="listening")setTimeout(()=>speakScript(ctx.text),400);
 }
 function closeModal(){ document.getElementById("modal").style.display="none"; try{speechSynthesis.cancel();}catch(e){} }
+function langPrefix(){ return (TTS_LANG||"en-US").slice(0,2).toLowerCase(); }
 function getVoice(){ if(!("speechSynthesis" in window))return null; const vs=speechSynthesis.getVoices(); if(!vs.length)return null;
   if(S.voiceName){ const m=vs.find(v=>v.name===S.voiceName); if(m)return m; }
-  const en=vs.filter(v=>/^en/i.test(v.lang)); if(!en.length)return vs[0];
-  const rank=v=>{ const n=v.name.toLowerCase(); let s=0; ["natural","neural","enhanced","premium","siri","samantha","google us english","aria","jenny","libby"].forEach((k,i)=>{ if(n.includes(k))s+=12-i; }); if(/en[-_]us/i.test(v.lang))s+=4; if(v.localService===false)s+=2; return s; };
-  en.sort((a,b)=>rank(b)-rank(a)); return en[0]; }
-function fillVoices(){ const sel=document.getElementById("voiceSel"); if(!sel)return; const vs=(("speechSynthesis" in window)?speechSynthesis.getVoices():[]).filter(v=>/^en/i.test(v.lang));
-  if(!vs.length){ sel.innerHTML='<option>読み込み中…（再生を押すと反映）</option>'; return; }
-  const cur=(getVoice()||{}).name;
-  sel.innerHTML=vs.map(v=>`<option value="${v.name}" ${v.name===cur?"selected":""}>${v.name}${v.localService===false?" ✨":""}</option>`).join(""); }
-function fillVoicesInit(){ const vs=(("speechSynthesis" in window)?speechSynthesis.getVoices():[]).filter(v=>/^en/i.test(v.lang));
+  const L=langPrefix(); const cand=vs.filter(v=>v.lang.toLowerCase().slice(0,2)===L); if(!cand.length)return vs[0];
+  const kws=["natural","neural","enhanced","premium","siri","samantha","google us english","google español","monica","mónica","paulina","jorge","aria","jenny","helena","enrique"];
+  const rank=v=>{ const n=v.name.toLowerCase(); let s=0; kws.forEach((k,i)=>{ if(n.includes(k))s+=16-i; }); if(v.lang.toLowerCase()===(TTS_LANG||"").toLowerCase())s+=4; if(v.localService===false)s+=2; return s; };
+  cand.sort((a,b)=>rank(b)-rank(a)); return cand[0]; }
+function voiceOptions(){ const L=langPrefix(); const vs=(("speechSynthesis" in window)?speechSynthesis.getVoices():[]).filter(v=>v.lang.toLowerCase().slice(0,2)===L);
   if(!vs.length)return '<option>読み込み中…（再生を押すと反映）</option>';
   const cur=(getVoice()||{}).name;
   return vs.map(v=>`<option value="${v.name}" ${v.name===cur?"selected":""}>${v.name}${v.localService===false?" ✨":""}</option>`).join(""); }
+function fillVoices(){ const sel=document.getElementById("voiceSel"); if(sel)sel.innerHTML=voiceOptions(); }
+function fillVoicesInit(){ return voiceOptions(); }
 function setVoice(){ S.voiceName=document.getElementById("voiceSel").value; save(); if(quizState&&quizState.ctx)speakScript(quizState.ctx.text); }
 function speakScript(text, rate){ try{ speechSynthesis.cancel(); const v=getVoice(); const r=rate||S.listenRate||0.95;
-  const segs=text.replace(/A:|B:/g," ").match(/[^.!?]+[.!?]*/g)||[text];
-  segs.forEach(seg=>{ if(!seg.trim())return; const u=new SpeechSynthesisUtterance(seg.trim()); u.lang="en-US"; if(v)u.voice=v; u.rate=r; speechSynthesis.speak(u); });
+  const segs=text.replace(/A:|B:/g," ").match(/[^.!?¿¡]+[.!?]*/g)||[text];
+  segs.forEach(seg=>{ if(!seg.trim())return; const u=new SpeechSynthesisUtterance(seg.trim()); u.lang=TTS_LANG||"en-US"; if(v)u.voice=v; u.rate=r; speechSynthesis.speak(u); });
 }catch(e){ if(quizState){quizState.showScript=true; renderQuiz();} } }
 function renderQuiz(){
   const q=quizState; const label=q.kind==="reading"?"読解":q.kind==="listening"?"リスニング":"模試ミニ";
@@ -1220,7 +1333,9 @@ async function doInstall(){ if(!deferredPrompt)return; deferredPrompt.prompt(); 
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{})); }
 
 /* ========== 初期化 ========== */
+applyCourse(COURSE);
 document.getElementById("soundLbl").textContent="🔊 効果音: "+(S.sound?"ON":"OFF");
+relabelForCourse();
 updateStats(); renderHome(); newPrompt(); newSpeak(); renderWriteHist();
 if(S.reminder)scheduleReminder();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden)renderHome(); });
