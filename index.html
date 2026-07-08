@@ -190,6 +190,8 @@
   .qchoice:active{transform:scale(.99);}
   .qchoice.correct{background:#17311f; border-color:var(--green); color:#a8e8cc;}
   .qchoice.wrong{background:#331717; border-color:var(--red); color:#f5b0b0;}
+  .qexp{font-size:12px; color:#bfe6d5; background:#16342a; border:1px solid #235c46; border-radius:8px; padding:8px 10px; margin:2px 0 4px; line-height:1.7;}
+  .vexp{font-size:14px; color:#cfe8dc; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; line-height:1.8;}
 </style>
 </head>
 <body>
@@ -253,6 +255,7 @@
         <div class="vq-combo" id="vCombo"></div>
         <div class="vq-prompt" id="vPrompt"></div>
         <div class="vq-choices" id="vChoices"></div>
+        <div class="vexp" id="vExp" style="display:none"></div>
       </div>
       <div class="center" id="fcDone" style="display:none; padding:20px 0;">
         <p style="font-size:15px; font-weight:700;">🎉 今日のカード完了!</p>
@@ -379,7 +382,7 @@
 /* ========== コース(言語) ========== */
 let COURSE = localStorage.getItem("app_course")||"en";
 let LS_KEY = (COURSE==="es") ? "eiken_es_v1" : "eiken_p1_v3";
-let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG;
+let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG,VOCAB_EX,WRITE_TIP,SPEAK_TIP;
 function switchCourse(c){ if(c===COURSE)return; localStorage.setItem("app_course",c); location.reload(); }
 
 /* ========== ストレージ ========== */
@@ -762,6 +765,7 @@ function nextCard(){
   if(queue.length===0){ area.style.display="none"; doneEl.style.display="block"; curCard=null;
     if((S.cardCount[today()]||0)>=1) completeTask("v"); return; }
   area.style.display="block"; doneEl.style.display="none"; vAnswered=false;
+  const ee0=document.getElementById("vExp"); if(ee0)ee0.style.display="none";
   curCard=queue[0]; const c=S.cards[curCard]; const v=VOCAB[curCard];
   const produce = c && c.iv>=2 && Math.random()<0.6; // レベルが上がると 意味→英単語(産出)
   let pool=[]; for(let i=0;i<VOCAB.length;i++){ if(i!==curCard && VOCAB[i][2]===v[2]) pool.push(i); }
@@ -793,7 +797,9 @@ function chooseVocab(k){
   if(S.cardCount[t]>=10) completeTask("v");
   document.getElementById("masteredCount").textContent=Object.values(S.cards).filter(x=>x.iv>=4).length;
   queue.shift(); if(!correct) queue.splice(Math.min(3,queue.length),0,curCard); // 間違いは後でまた出す
-  setTimeout(nextCard, correct?700:1200);
+  const ex=VOCAB_EX && VOCAB_EX[VOCAB[curCard][0]]; const ee=document.getElementById("vExp");
+  ee.innerHTML=(ex?("📝 "+ex+"<br>"):"")+'<div style="text-align:center;margin-top:8px"><button class="btn sm" onclick="nextCard()">次へ ▶</button></div>';
+  ee.style.display="block";
 }
 function extraNew(){extraAllowance+=10; renderFlash();}
 
@@ -863,10 +869,16 @@ function newPrompt(){ const mode=document.getElementById("writeMode").value; con
   const wm=document.getElementById("writeModel"); if(wm)wm.style.display="none"; resetWriteTimer(); }
 function toggleWriteModel(){ const el=document.getElementById("writeModel");
   if(el.style.display==="none"){ const mode=document.getElementById("writeMode").value;
-    el.innerHTML = mode==="essay"
-      ? `<div class="prompt-box" style="border-left-color:var(--green)"><b>解答例</b><div style="margin-top:6px;line-height:1.9">${ESSAY_MODELS[curEssay]}</div><div class="pts">これは一例です。自分の意見・理由に置き換えて使える「型」として参考に。まず自分で書いてから見るのがおすすめ。</div></div>`
-      : `<div class="prompt-box" style="border-left-color:var(--green)"><b>要約の解答例</b><div style="margin-top:6px;line-height:1.9">${SUMMARY_MODEL}</div></div>`;
+    if(mode==="essay"){
+      el.innerHTML=`<div class="prompt-box" style="border-left-color:var(--green)"><b>解答例</b><div style="margin-top:6px;line-height:1.9">${ESSAY_MODELS[curEssay]}</div>
+        <button class="btn sm" style="margin-top:10px" onclick="copyModelToArea()">✍️ この例文を入力欄にコピーして真似る</button>
+        <div class="pts">💡 <b>ポイント</b>: ${WRITE_TIP}<br>初心者はまず写して、慣れたら単語を1〜2個だけ自分のことに変えてみよう。</div></div>`;
+    } else {
+      el.innerHTML=`<div class="prompt-box" style="border-left-color:var(--green)"><b>解答例</b><div style="margin-top:6px;line-height:1.9">${SUMMARY_MODEL}</div><div class="pts">💡 ${WRITE_TIP}</div></div>`;
+    }
     el.style.display="block"; } else el.style.display="none"; }
+function copyModelToArea(){ const ta=document.getElementById("writeArea"); ta.value=ESSAY_MODELS[curEssay]; updateWC();
+  alert("例文を入力欄にコピーしました。まずはこのまま写して、慣れたら単語を1〜2個だけ自分のことに変えてみよう。"); ta.focus(); }
 function fmtT(s){const m=Math.floor(Math.abs(s)/60),ss=Math.abs(s)%60;return (s<0?"-":"")+m+":"+String(ss).padStart(2,"0");}
 function tickW(){ wSec--; const el=document.getElementById("writeTimer"); el.textContent=fmtT(wSec); el.className="timer-disp"+(wSec<0?" over":wSec<300?" warn":""); }
 function toggleWriteTimer(){ const btn=document.getElementById("writeStartBtn"); if(wRunning){clearInterval(wTimer); wRunning=false; btn.textContent="再開";} else{wTimer=setInterval(tickW,1000); wRunning=true; btn.textContent="一時停止";} }
@@ -889,7 +901,7 @@ function newSpeak(){ const mode=document.getElementById("speakMode").value; curS
   const sm=document.getElementById("speakModel"); if(sm)sm.style.display="none"; resetSpeak(); }
 function toggleSpeakModel(){ const el=document.getElementById("speakModel");
   if(el.style.display==="none"){ const m = curSpeakMode==="narration" ? NARR_MODELS[curSpeakIdx] : QA_MODELS[curSpeakIdx];
-    el.innerHTML=`<div class="prompt-box" style="border-left-color:var(--green)"><b>解答例</b><div style="margin-top:6px;line-height:1.9">${m}</div><div class="pts">${curSpeakMode==="narration"?"過去形・各場面2〜3文の型の一例です。声に出して真似ると効果的。":"意見→理由→(例)の型の一例です。まず自分で答えてから見よう。"}</div></div>`;
+    el.innerHTML=`<div class="prompt-box" style="border-left-color:var(--green)"><b>解答例</b><div style="margin-top:6px;line-height:1.9">${m}</div><div class="pts">${curSpeakMode==="narration"?"過去形・各場面2〜3文の型の一例です。声に出して真似ると効果的。":"意見→理由→(例)の型の一例です。まず自分で答えてから見よう。"}<br>💡 ${SPEAK_TIP}</div></div>`;
     el.style.display="block"; } else el.style.display="none"; }
 function startSpeak(){ clearInterval(sTimer); const mode=document.getElementById("speakMode").value; sStage=0; sSec=mode==="narration"?60:10;
   document.getElementById("speakStage").textContent="準備時間"; document.getElementById("speakTimer").textContent=fmtT(sSec);
@@ -1146,43 +1158,52 @@ const ES_VOCAB=[
 ["grande","大きい","形"],["pequeño","小さい","形"],["bueno","良い","形"],["malo","悪い","形"],["nuevo","新しい","形"],["bonito","きれいな","形"],["fácil","簡単な","形"],["difícil","難しい","形"],["caro","(値段が)高い","形"],["barato","安い","形"],
 ["hoy","今日","副"],["mañana","明日・朝","名"],["ayer","昨日","副"],["siempre","いつも","副"],["muy","とても","副"],["también","〜もまた","副"],["pero","しかし","接"],["porque","なぜなら","接"],["gracias","ありがとう","表現"],["hola","こんにちは","表現"]
 ];
+const ES_VOCAB_EX={
+"casa":"Mi casa es pequeña. (私の家は小さい)","agua":"Bebo mucha agua. (水をたくさん飲む)","comida":"La comida está lista. (食事の準備ができた)","tiempo":"No tengo tiempo hoy. (今日は時間がない)","día":"Hoy es un buen día. (今日は良い日だ)","noche":"Buenas noches. (おやすみなさい)","año":"Tengo veinte años. (私は20歳です)","hombre":"El hombre es alto. (その男性は背が高い)","mujer":"La mujer habla español. (その女性はスペイン語を話す)","niño":"El niño juega en el parque. (子どもが公園で遊ぶ)",
+"amigo":"Es mi amigo. (彼は私の友達だ)","familia":"Mi familia es grande. (私の家族は大きい)","ciudad":"Madrid es una ciudad bonita. (マドリードは美しい街だ)","país":"España es mi país favorito. (スペインは私の好きな国だ)","escuela":"Voy a la escuela. (学校へ行く)","profesor":"El profesor es amable. (先生は親切だ)","libro":"Leo un libro interesante. (面白い本を読む)","mesa":"El libro está en la mesa. (本は机の上にある)","puerta":"Abre la puerta, por favor. (ドアを開けて)","coche":"Mi coche es nuevo. (私の車は新しい)",
+"calle":"La calle es muy larga. (その通りはとても長い)","dinero":"No tengo dinero. (お金がない)","tienda":"Compro pan en la tienda. (店でパンを買う)","playa":"Vamos a la playa. (ビーチへ行こう)","película":"Veo una película. (映画を見る)","música":"Me gusta la música. (音楽が好きだ)","fiesta":"Hay una fiesta el sábado. (土曜にパーティーがある)","trabajo":"Mi trabajo es difícil. (私の仕事は難しい)","gato":"Mi gato es blanco. (私の猫は白い)","perro":"El perro es grande. (その犬は大きい)",
+"ser":"Soy japonés. (私は日本人だ)","estar":"Estoy en casa. (私は家にいる)","tener":"Tengo dos hermanos. (兄弟が2人いる)","hacer":"Hago los deberes. (宿題をする)","ir":"Voy al trabajo. (仕事へ行く)","comer":"Como a la una. (1時に食べる)","beber":"Bebo café. (コーヒーを飲む)","vivir":"Vivo en Tokio. (東京に住んでいる)","hablar":"Hablo un poco de español. (少しスペイン語を話す)","estudiar":"Estudio todos los días. (毎日勉強する)",
+"comprar":"Compro fruta. (果物を買う)","leer":"Leo el periódico. (新聞を読む)","escribir":"Escribo una carta. (手紙を書く)","querer":"Quiero un café. (コーヒーが欲しい)","poder":"¿Puedo pasar? (入ってもいい?)","ver":"Veo la tele. (テレビを見る)","dormir":"Duermo ocho horas. (8時間眠る)","viajar":"Quiero viajar a España. (スペインへ旅行したい)","gustar":"Me gusta el café. (コーヒーが好きだ)","trabajar":"Trabajo en una oficina. (オフィスで働く)",
+"grande":"La casa es grande. (家は大きい)","pequeño":"El gato es pequeño. (猫は小さい)","bueno":"Es un buen libro. (良い本だ)","malo":"Hace mal tiempo. (天気が悪い)","nuevo":"Tengo un coche nuevo. (新しい車を持っている)","bonito":"Es un lugar bonito. (きれいな場所だ)","fácil":"El examen es fácil. (試験は簡単だ)","difícil":"El español no es difícil. (スペイン語は難しくない)","caro":"Este reloj es caro. (この時計は高い)","barato":"El pan es barato. (パンは安い)",
+"hoy":"Hoy no trabajo. (今日は働かない)","mañana":"Hasta mañana. (また明日)","ayer":"Ayer llovió. (昨日は雨が降った)","siempre":"Siempre desayuno pan. (いつもパンを朝食に食べる)","muy":"Estoy muy cansado. (とても疲れている)","también":"Yo también quiero ir. (私も行きたい)","pero":"Es caro, pero bonito. (高いけどきれい)","porque":"No voy porque estoy enfermo. (病気なので行かない)","gracias":"Muchas gracias. (どうもありがとう)","hola":"Hola, ¿qué tal? (やあ、元気?)"
+};
 const ES_READINGS=[
  {passage:"Me llamo Ana y vivo en Madrid con mi familia. Mi padre es profesor y mi madre trabaja en un hospital. Tengo un hermano pequeño que se llama Luis. Los fines de semana comemos juntos y a veces vamos al parque. Me gusta mucho mi familia.",
-  q:[{q:"アナの父親の仕事は?",choices:["先生","医者","店員","運転手"],a:0},{q:"週末に家族ですることは?",choices:["一緒に食事する","映画を見る","旅行する","買い物する"],a:0}]},
+  q:[{q:"アナの父親の仕事は?",choices:["先生","医者","店員","運転手"],a:0,exp:"«Mi padre es profesor»=私の父は先生。profesor=先生。"},{q:"週末に家族ですることは?",choices:["一緒に食事する","映画を見る","旅行する","買い物する"],a:0,exp:"«los fines de semana comemos juntos»=週末は一緒に食べる。juntos=一緒に。"}]},
  {passage:"Todos los días me levanto a las siete. Desayuno café con leche y pan. Luego voy a la escuela en autobús. Por la tarde estudio en la biblioteca y hago los deberes. Por la noche ceno con mi familia y me acuesto a las once.",
-  q:[{q:"何時に起きますか?",choices:["7時","8時","6時","11時"],a:0},{q:"学校へは何で行きますか?",choices:["バス","車","自転車","徒歩"],a:0}]},
+  q:[{q:"何時に起きますか?",choices:["7時","8時","6時","11時"],a:0,exp:"«me levanto a las siete»=7時に起きる。levantarse=起きる。"},{q:"学校へは何で行きますか?",choices:["バス","車","自転車","徒歩"],a:0,exp:"«voy a la escuela en autobús»=バスで学校へ。en+乗り物=〜で。"}]},
  {passage:"En España, la comida es muy importante. La gente come a las dos o las tres de la tarde, más tarde que en otros países. Un plato famoso es la paella, que lleva arroz, verduras y a veces pollo o marisco. También son populares las tapas, pequeñas porciones de comida.",
-  q:[{q:"スペインで昼食は何時ごろ?",choices:["午後2〜3時","正午","午前11時","午後5時"],a:0},{q:"パエリアに入っているものは?",choices:["米・野菜など","パンだけ","果物","スープ"],a:0}]},
+  q:[{q:"スペインで昼食は何時ごろ?",choices:["午後2〜3時","正午","午前11時","午後5時"],a:0,exp:"«come a las dos o las tres de la tarde»=午後2〜3時に食べる。"},{q:"パエリアに入っているものは?",choices:["米・野菜など","パンだけ","果物","スープ"],a:0,exp:"«lleva arroz, verduras...»=米・野菜が入っている。llevar=(材料が)入っている。"}]},
  {passage:"Vivo en una ciudad pequeña cerca del mar. No es muy grande, pero es muy bonita. Hay una plaza en el centro con muchos cafés. En verano, mucha gente va a la playa. Me gusta vivir aquí porque es tranquilo y la gente es amable.",
-  q:[{q:"この街はどこの近くにありますか?",choices:["海","山","川","砂漠"],a:0},{q:"話者がここを気に入っている理由は?",choices:["静かで人が親切","大きいから","にぎやかだから","有名だから"],a:0}]},
+  q:[{q:"この街はどこの近くにありますか?",choices:["海","山","川","砂漠"],a:0,exp:"«cerca del mar»=海の近く。cerca de=〜の近く、mar=海。"},{q:"話者がここを気に入っている理由は?",choices:["静かで人が親切","大きいから","にぎやかだから","有名だから"],a:0,exp:"«porque es tranquilo y la gente es amable»=静かで人が親切だから。"}]},
  {passage:"El verano pasado viajé a México con dos amigos. Fue un viaje fantástico. Visitamos museos, comimos comida deliciosa y conocimos a mucha gente simpática. También fuimos a la playa y nadamos en el mar. Quiero volver a México algún día.",
-  q:[{q:"誰と旅行しましたか?",choices:["2人の友達","家族","一人で","同僚"],a:0},{q:"話者は今後どうしたい?",choices:["またメキシコに行きたい","もう行きたくない","引っ越したい","仕事したい"],a:0}]}
+  q:[{q:"誰と旅行しましたか?",choices:["2人の友達","家族","一人で","同僚"],a:0,exp:"«con dos amigos»=2人の友達と。con=〜と一緒に。"},{q:"話者は今後どうしたい?",choices:["またメキシコに行きたい","もう行きたくない","引っ越したい","仕事したい"],a:0,exp:"«Quiero volver a México»=またメキシコに戻りたい。volver=戻る。"}]}
 ];
 const ES_LISTENINGS=[
  {script:"A: Hola, buenos días. ¿Qué desea? B: Buenos días. Quiero un café con leche, por favor. A: ¿Algo más? B: Sí, también un croissant. A: Muy bien. Son tres euros con cincuenta. B: Aquí tiene. Gracias.",
-  q:[{q:"客が注文したものは?",choices:["カフェオレとクロワッサン","お茶とケーキ","水だけ","サンドイッチ"],a:0},{q:"値段はいくら?",choices:["3.50ユーロ","5ユーロ","2ユーロ","10ユーロ"],a:0}]},
+  q:[{q:"客が注文したものは?",choices:["カフェオレとクロワッサン","お茶とケーキ","水だけ","サンドイッチ"],a:0,exp:"«un café con leche» y «un croissant»=カフェオレとクロワッサン。"},{q:"値段はいくら?",choices:["3.50ユーロ","5ユーロ","2ユーロ","10ユーロ"],a:0,exp:"«tres euros con cincuenta»=3ユーロ50セント=3.50ユーロ。"}]},
  {script:"A: Buenas tardes. ¿Puedo ayudarle? B: Sí, busco una camiseta azul. A: ¿Qué talla necesita? B: La talla mediana, por favor. A: Aquí tiene. Cuesta quince euros. B: Perfecto, me la llevo.",
-  q:[{q:"客が探しているものは?",choices:["青いTシャツ","赤い靴","帽子","ズボン"],a:0},{q:"サイズは?",choices:["M(中)","S(小)","L(大)","XL"],a:0}]},
+  q:[{q:"客が探しているものは?",choices:["青いTシャツ","赤い靴","帽子","ズボン"],a:0,exp:"«busco una camiseta azul»=青いTシャツを探している。azul=青。"},{q:"サイズは?",choices:["M(中)","S(小)","L(大)","XL"],a:0,exp:"«la talla mediana»=Mサイズ。talla=サイズ、mediana=中。"}]},
  {script:"Hola, me llamo Carlos. Soy de Argentina, pero ahora vivo en Barcelona. Tengo veinticinco años y soy estudiante de medicina. En mi tiempo libre me gusta jugar al fútbol y escuchar música. Encantado de conoceros.",
-  q:[{q:"カルロスの出身は?",choices:["アルゼンチン","スペイン","メキシコ","ペルー"],a:0},{q:"彼の趣味は?",choices:["サッカーと音楽","料理と読書","映画と旅行","絵と写真"],a:0}]},
+  q:[{q:"カルロスの出身は?",choices:["アルゼンチン","スペイン","メキシコ","ペルー"],a:0,exp:"«Soy de Argentina»=アルゼンチン出身。ser de=〜出身。"},{q:"彼の趣味は?",choices:["サッカーと音楽","料理と読書","映画と旅行","絵と写真"],a:0,exp:"«me gusta jugar al fútbol y escuchar música»=サッカーと音楽。"}]},
  {script:"Atención, pasajeros. El tren con destino a Sevilla saldrá del andén número cuatro a las diez y media. Por favor, tengan sus billetes preparados. El viaje dura unas dos horas. Gracias por viajar con nosotros.",
-  q:[{q:"セビリア行きの列車は何番線から?",choices:["4番線","2番線","10番線","3番線"],a:0},{q:"所要時間は?",choices:["約2時間","約30分","約4時間","約1時間"],a:0}]},
+  q:[{q:"セビリア行きの列車は何番線から?",choices:["4番線","2番線","10番線","3番線"],a:0,exp:"«del andén número cuatro»=4番線から。andén=ホーム。"},{q:"所要時間は?",choices:["約2時間","約30分","約4時間","約1時間"],a:0,exp:"«El viaje dura unas dos horas»=約2時間かかる。durar=(時間が)かかる。"}]},
  {script:"A: Hola, María. ¿Quieres venir a mi fiesta el sábado? B: ¡Hola! Sí, me encantaría. ¿A qué hora es? A: A las ocho de la noche, en mi casa. B: Perfecto. ¿Llevo algo? A: No hace falta, solo ven. B: Vale, ¡hasta el sábado!",
-  q:[{q:"パーティーはいつ?",choices:["土曜の夜8時","金曜の昼","日曜の朝","木曜の夜"],a:0},{q:"マリアは何か持っていく必要がある?",choices:["必要ない","飲み物","食べ物","プレゼント"],a:0}]}
+  q:[{q:"パーティーはいつ?",choices:["土曜の夜8時","金曜の昼","日曜の朝","木曜の夜"],a:0,exp:"«el sábado... a las ocho de la noche»=土曜の夜8時。"},{q:"マリアは何か持っていく必要がある?",choices:["必要ない","飲み物","食べ物","プレゼント"],a:0,exp:"«No hace falta»=必要ない。hace falta=必要である。"}]}
 ];
 const ES_MOCKQS=[
- {q:"Yo ___ estudiante de español.",choices:["soy","eres","es","son"],a:0},
- {q:"Ella ___ en Madrid.",choices:["vivo","vives","vive","viven"],a:2},
- {q:"Nosotros ___ café todas las mañanas.",choices:["bebo","bebemos","bebe","beben"],a:1},
- {q:"A mí ___ gusta mucho la música.",choices:["me","te","le","nos"],a:0},
- {q:"Los libros están ___ la mesa.",choices:["en","a","de","con"],a:0},
- {q:"Hace mucho ___ hoy; necesito una chaqueta.",choices:["calor","sol","viento","frío"],a:3},
- {q:"Voy ___ supermercado a comprar comida.",choices:["a la","al","de","en"],a:1},
- {q:"Mi hermana es más alta ___ yo.",choices:["que","de","como","a"],a:0},
- {q:"¿___ años tienes? — Tengo veinte.",choices:["Cómo","Dónde","Cuántos","Cuándo"],a:2},
- {q:"Ayer ___ al cine con mis amigos.",choices:["voy","fui","iré","ir"],a:1},
- {q:"Este restaurante es muy ___; no tengo mucho dinero.",choices:["caro","barato","grande","nuevo"],a:0},
- {q:"Por favor, ___ la puerta. Hace frío.",choices:["come","abre","cierra","habla"],a:2}
+ {q:"Yo ___ estudiante de español.",choices:["soy","eres","es","son"],a:0,exp:"ser(〜である)の一人称単数は soy。「私は〜だ」=Yo soy…。"},
+ {q:"Ella ___ en Madrid.",choices:["vivo","vives","vive","viven"],a:2,exp:"vivir(住む)の三人称単数は vive。ella/él の活用は語尾 -e。"},
+ {q:"Nosotros ___ café todas las mañanas.",choices:["bebo","bebemos","bebe","beben"],a:1,exp:"beber(飲む)の一人称複数(nosotros)は語尾 -emos → bebemos。"},
+ {q:"A mí ___ gusta mucho la música.",choices:["me","te","le","nos"],a:0,exp:"gustar は「私に〜が好まれる」。«A mí me gusta…»の形。私=me。"},
+ {q:"Los libros están ___ la mesa.",choices:["en","a","de","con"],a:0,exp:"場所「〜の上に/中に」は en。en la mesa=机の上に。"},
+ {q:"Hace mucho ___ hoy; necesito una chaqueta.",choices:["calor","sol","viento","frío"],a:3,exp:"天気は hace+名詞。上着が要る=寒い→hace frío。"},
+ {q:"Voy ___ supermercado a comprar comida.",choices:["a la","al","de","en"],a:1,exp:"a+el=al(縮約)。«voy al supermercado»(スーパーへ行く)。"},
+ {q:"Mi hermana es más alta ___ yo.",choices:["que","de","como","a"],a:0,exp:"比較は más+形容詞+que。«más alta que yo»(私より背が高い)。"},
+ {q:"¿___ años tienes? — Tengo veinte.",choices:["Cómo","Dónde","Cuántos","Cuándo"],a:2,exp:"「何歳?」=¿Cuántos años tienes? cuántos=いくつ(数)。"},
+ {q:"Ayer ___ al cine con mis amigos.",choices:["voy","fui","iré","ir"],a:1,exp:"ayer(昨日)→過去。ir の点過去・一人称は fui。"},
+ {q:"Este restaurante es muy ___; no tengo mucho dinero.",choices:["caro","barato","grande","nuevo"],a:0,exp:"caro=(値段が)高い。お金がない→高い。反対は barato(安い)。"},
+ {q:"Por favor, ___ la puerta. Hace frío.",choices:["come","abre","cierra","habla"],a:2,exp:"命令形(tú)。cerrar→cierra(閉めて)。寒いのでドアを閉めて。"}
 ];
 const ES_ESSAYS=[
  ["自己紹介を5文で書く（名前・出身・仕事や勉強・趣味・家族）","Me llamo… / Soy de… / Trabajo/Estudio… / Me gusta… / Tengo…"],
@@ -1221,12 +1242,17 @@ const ES_QA_MODELS=[
  "En mi tiempo libre me gusta leer, escuchar música y pasear por el parque."
 ];
 
+const EN_VOCAB_EX={};
+const EN_WRITE_TIP="型: I agree/disagree that… → First,… → Second,… → In conclusion,… の順で書くと減点されにくい。理由には例(For example)を1つ添えると強い。";
+const EN_SPEAK_TIP="意見→理由→(例)の順。10秒考えてから話し始めると詰まりにくい。";
+const ES_WRITE_TIP="型: 「主語+動詞」で短く。Me llamo… / Soy de… / Me gusta… のように覚えた形をそのまま使う。まずは3〜5文でOK。";
+const ES_SPEAK_TIP="«Me gusta…», «Todos los días…», «El fin de semana pasado…» など覚えた表現をそのまま並べて話そう。";
 const COURSES={
- en:{ttsLang:"en-US", vocab:EN_VOCAB, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
- es:{ttsLang:"es-ES", vocab:ES_VOCAB, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
+ en:{ttsLang:"en-US", vocab:EN_VOCAB, vocabEx:EN_VOCAB_EX, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, writeTip:EN_WRITE_TIP, speakTip:EN_SPEAK_TIP, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
+ es:{ttsLang:"es-ES", vocab:ES_VOCAB, vocabEx:ES_VOCAB_EX, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, writeTip:ES_WRITE_TIP, speakTip:ES_SPEAK_TIP, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
 };
 function applyCourse(c){ const d=COURSES[c]||COURSES.en;
-  TTS_LANG=d.ttsLang; VOCAB=d.vocab; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint;
+  TTS_LANG=d.ttsLang; VOCAB=d.vocab; VOCAB_EX=d.vocabEx||{}; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint; WRITE_TIP=d.writeTip; SPEAK_TIP=d.speakTip;
   NARRATIONS=d.narrations; NARR_MODELS=d.narrModels; QAS=d.qas; QA_MODELS=d.qaModels; READINGS=d.readings; LISTENINGS=d.listenings; MOCKQS=d.mockqs; }
 function relabelForCourse(){
   const wm=document.getElementById("writeMode");
@@ -1284,6 +1310,7 @@ function renderQuiz(){
     qq.choices.forEach((c,ci)=>{ let cls="qchoice"; const picked=q.picked[qi];
       if(picked!=null){ if(ci===qq.a)cls+=" correct"; else if(ci===picked)cls+=" wrong"; }
       h+=`<div class="${cls}" onclick="pickAns(${qi},${ci})">${String.fromCharCode(65+ci)}. ${c}</div>`; });
+    if(q.picked[qi]!=null && qq.exp) h+=`<div class="qexp">💡 ${qq.exp}</div>`;
     h+=`</div>`;
   });
   if(q.answered>=q.qs.length){ h+=`<div class="center" style="margin-top:6px"><p style="font-weight:800;margin-bottom:10px">結果: ${q.correct} / ${q.qs.length} 正解 🎉</p><button class="btn green" style="width:100%" onclick="finishQuiz()">完了する</button></div>`; }
