@@ -229,6 +229,11 @@
       </div>
     </div>
 
+    <div class="card" id="stepCard" style="display:none">
+      <h2>🎓 ステップ学習 <span class="tag">初心者向け・やさしい順</span></h2>
+      <div id="stepList"></div>
+      <p style="font-size:11px; color:var(--sub); margin-top:8px;">前のステップをクリアすると次が開きます。1歩ずつでOK。まずここから！</p>
+    </div>
     <div class="card">
       <h2>今日のメニュー <span class="tag" id="dayLabel"></span></h2>
       <div id="banners"></div>
@@ -382,7 +387,7 @@
 /* ========== コース(言語) ========== */
 let COURSE = localStorage.getItem("app_course")||"en";
 let LS_KEY = (COURSE==="es") ? "eiken_es_v1" : "eiken_p1_v3";
-let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG,VOCAB_EX,WRITE_TIP,SPEAK_TIP;
+let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG,VOCAB_EX,WRITE_TIP,SPEAK_TIP,STEPS;
 function switchCourse(c){ if(c===COURSE)return; localStorage.setItem("app_course",c); location.reload(); }
 
 /* ========== ストレージ ========== */
@@ -406,7 +411,7 @@ function initS(){
   S.reminder=S.reminder||null; S.firstDay=S.firstDay||null;
   S.listenRate=S.listenRate||0.95; if(S.voiceName===undefined)S.voiceName=null;
   // 新: コレクション / 装備
-  S.owned=S.owned||{sp_blob:1}; S.owned.sp_blob=S.owned.sp_blob||1;
+  S.owned=S.owned||{sp_blob:1}; S.owned.sp_blob=S.owned.sp_blob||1; S.steps=S.steps||{};
   S.shards=S.shards||0; S.pullCount=S.pullCount||0; S.sinceSR=S.sinceSR||0; S.sinceSSR=S.sinceSSR||0;
   S.buddy=S.buddy||{}; S.buddy.species=S.buddy.species||"sp_blob";
   S.buddy.bg=S.buddy.bg||"bg_none"; S.buddy.effect=S.buddy.effect||"ef_none";
@@ -629,7 +634,7 @@ function renderHome(){
   document.getElementById("petName").innerHTML=`${S.petName} <span class="sub">Lv.${li.lv} · ${STAGE_NAME[petStage(li.lv)]}</span> <span class="edit" onclick="event.stopPropagation();renamePet()">✎</span>`;
   document.getElementById("petMood").textContent = mood==="happy"?"ごきげん🎵":mood==="good"?"やる気アップ↑":mood==="sad"?"さみしがってる…":"待ってるよ";
   renderBuddyView(mood); say(mood);
-  renderBanners(info); updateStats();
+  renderSteps(); renderBanners(info); updateStats();
 }
 function renderBanners(){
   let h="";
@@ -1156,7 +1161,15 @@ const ES_VOCAB=[
 ["ser","〜である","動"],["estar","〜にいる・ある","動"],["tener","持っている","動"],["hacer","する・作る","動"],["ir","行く","動"],["comer","食べる","動"],["beber","飲む","動"],["vivir","住む・生きる","動"],["hablar","話す","動"],["estudiar","勉強する","動"],
 ["comprar","買う","動"],["leer","読む","動"],["escribir","書く","動"],["querer","欲しい・愛する","動"],["poder","できる","動"],["ver","見る","動"],["dormir","眠る","動"],["viajar","旅行する","動"],["gustar","好きである","動"],["trabajar","働く","動"],
 ["grande","大きい","形"],["pequeño","小さい","形"],["bueno","良い","形"],["malo","悪い","形"],["nuevo","新しい","形"],["bonito","きれいな","形"],["fácil","簡単な","形"],["difícil","難しい","形"],["caro","(値段が)高い","形"],["barato","安い","形"],
-["hoy","今日","副"],["mañana","明日・朝","名"],["ayer","昨日","副"],["siempre","いつも","副"],["muy","とても","副"],["también","〜もまた","副"],["pero","しかし","接"],["porque","なぜなら","接"],["gracias","ありがとう","表現"],["hola","こんにちは","表現"]
+["hoy","今日","副"],["mañana","明日・朝","名"],["ayer","昨日","副"],["siempre","いつも","副"],["muy","とても","副"],["también","〜もまた","副"],["pero","しかし","接"],["porque","なぜなら","接"],["gracias","ありがとう","表現"],["hola","こんにちは","表現"],
+["hermano","兄弟","名"],["hermana","姉妹","名"],["padre","父","名"],["madre","母","名"],["hijo","息子","名"],["nombre","名前","名"],["teléfono","電話","名"],["oficina","オフィス","名"],["hospital","病院","名"],["restaurante","レストラン","名"],
+["hotel","ホテル","名"],["estación","駅","名"],["tren","電車","名"],["avión","飛行機","名"],["billete","切符","名"],["pan","パン","名"],["leche","牛乳","名"],["café","コーヒー","名"],["fruta","果物","名"],["carne","肉","名"],
+["pescado","魚","名"],["semana","週","名"],["mes","月(暦)","名"],["hora","時間・時刻","名"],["mundo","世界","名"],["problema","問題","名"],["pregunta","質問","名"],["palabra","単語","名"],["color","色","名"],["ropa","服","名"],
+["aprender","学ぶ","動"],["enseñar","教える","動"],["empezar","始める","動"],["terminar","終える","動"],["llegar","着く","動"],["salir","出る","動"],["entrar","入る","動"],["ayudar","助ける","動"],["buscar","探す","動"],["encontrar","見つける","動"],
+["esperar","待つ・期待する","動"],["pagar","払う","動"],["costar","(値段が)かかる","動"],["llamar","電話する・呼ぶ","動"],["pensar","考える","動"],["entender","理解する","動"],["conocer","知り合う","動"],["jugar","遊ぶ・(競技を)する","動"],["correr","走る","動"],["caminar","歩く","動"],
+["cocinar","料理する","動"],["cantar","歌う","動"],["bailar","踊る","動"],["volver","戻る","動"],["llevar","持っていく・着ている","動"],["tomar","取る・飲む","動"],["alto","背が高い","形"],["bajo","低い","形"],["joven","若い","形"],["largo","長い","形"],
+["corto","短い","形"],["limpio","きれいな(清潔)","形"],["sucio","汚い","形"],["rico","おいしい・金持ちの","形"],["contento","うれしい","形"],["triste","悲しい","形"],["cansado","疲れた","形"],["enfermo","病気の","形"],["ocupado","忙しい","形"],["libre","暇な・自由な","形"],
+["ahora","今","副"],["luego","あとで","副"],["mucho","たくさん","副"],["poco","少し","副"],["todo","すべて","名"],["nada","何も〜ない","代"],["bien","よく・元気","副"],["mal","悪く","副"],["más","もっと","副"],["aquí","ここ","副"]
 ];
 const ES_VOCAB_EX={
 "casa":"Mi casa es pequeña. (私の家は小さい)","agua":"Bebo mucha agua. (水をたくさん飲む)","comida":"La comida está lista. (食事の準備ができた)","tiempo":"No tengo tiempo hoy. (今日は時間がない)","día":"Hoy es un buen día. (今日は良い日だ)","noche":"Buenas noches. (おやすみなさい)","año":"Tengo veinte años. (私は20歳です)","hombre":"El hombre es alto. (その男性は背が高い)","mujer":"La mujer habla español. (その女性はスペイン語を話す)","niño":"El niño juega en el parque. (子どもが公園で遊ぶ)",
@@ -1165,7 +1178,15 @@ const ES_VOCAB_EX={
 "ser":"Soy japonés. (私は日本人だ)","estar":"Estoy en casa. (私は家にいる)","tener":"Tengo dos hermanos. (兄弟が2人いる)","hacer":"Hago los deberes. (宿題をする)","ir":"Voy al trabajo. (仕事へ行く)","comer":"Como a la una. (1時に食べる)","beber":"Bebo café. (コーヒーを飲む)","vivir":"Vivo en Tokio. (東京に住んでいる)","hablar":"Hablo un poco de español. (少しスペイン語を話す)","estudiar":"Estudio todos los días. (毎日勉強する)",
 "comprar":"Compro fruta. (果物を買う)","leer":"Leo el periódico. (新聞を読む)","escribir":"Escribo una carta. (手紙を書く)","querer":"Quiero un café. (コーヒーが欲しい)","poder":"¿Puedo pasar? (入ってもいい?)","ver":"Veo la tele. (テレビを見る)","dormir":"Duermo ocho horas. (8時間眠る)","viajar":"Quiero viajar a España. (スペインへ旅行したい)","gustar":"Me gusta el café. (コーヒーが好きだ)","trabajar":"Trabajo en una oficina. (オフィスで働く)",
 "grande":"La casa es grande. (家は大きい)","pequeño":"El gato es pequeño. (猫は小さい)","bueno":"Es un buen libro. (良い本だ)","malo":"Hace mal tiempo. (天気が悪い)","nuevo":"Tengo un coche nuevo. (新しい車を持っている)","bonito":"Es un lugar bonito. (きれいな場所だ)","fácil":"El examen es fácil. (試験は簡単だ)","difícil":"El español no es difícil. (スペイン語は難しくない)","caro":"Este reloj es caro. (この時計は高い)","barato":"El pan es barato. (パンは安い)",
-"hoy":"Hoy no trabajo. (今日は働かない)","mañana":"Hasta mañana. (また明日)","ayer":"Ayer llovió. (昨日は雨が降った)","siempre":"Siempre desayuno pan. (いつもパンを朝食に食べる)","muy":"Estoy muy cansado. (とても疲れている)","también":"Yo también quiero ir. (私も行きたい)","pero":"Es caro, pero bonito. (高いけどきれい)","porque":"No voy porque estoy enfermo. (病気なので行かない)","gracias":"Muchas gracias. (どうもありがとう)","hola":"Hola, ¿qué tal? (やあ、元気?)"
+"hoy":"Hoy no trabajo. (今日は働かない)","mañana":"Hasta mañana. (また明日)","ayer":"Ayer llovió. (昨日は雨が降った)","siempre":"Siempre desayuno pan. (いつもパンを朝食に食べる)","muy":"Estoy muy cansado. (とても疲れている)","también":"Yo también quiero ir. (私も行きたい)","pero":"Es caro, pero bonito. (高いけどきれい)","porque":"No voy porque estoy enfermo. (病気なので行かない)","gracias":"Muchas gracias. (どうもありがとう)","hola":"Hola, ¿qué tal? (やあ、元気?)",
+"hermano":"Mi hermano es alto. (兄は背が高い)","hermana":"Tengo una hermana. (姉/妹がいる)","padre":"Mi padre trabaja mucho. (父はよく働く)","madre":"Mi madre cocina bien. (母は料理が上手)","hijo":"Tiene un hijo. (彼には息子がいる)","nombre":"¿Cuál es tu nombre? (名前は?)","teléfono":"Mi teléfono es nuevo. (電話は新しい)","oficina":"Trabajo en una oficina. (オフィスで働く)","hospital":"Voy al hospital. (病院へ行く)","restaurante":"Comemos en un restaurante. (レストランで食べる)",
+"hotel":"El hotel es grande. (ホテルは大きい)","estación":"La estación está cerca. (駅は近い)","tren":"Voy en tren. (電車で行く)","avión":"El avión es rápido. (飛行機は速い)","billete":"Compro un billete. (切符を買う)","pan":"Como pan por la mañana. (朝にパンを食べる)","leche":"Bebo leche. (牛乳を飲む)","café":"Quiero un café. (コーヒーが欲しい)","fruta":"Me gusta la fruta. (果物が好き)","carne":"No como carne. (肉を食べない)",
+"pescado":"El pescado es fresco. (魚は新鮮だ)","semana":"Esta semana trabajo. (今週は働く)","mes":"Un mes tiene cuatro semanas. (1か月は4週間)","hora":"¿Qué hora es? (何時?)","mundo":"Quiero ver el mundo. (世界を見たい)","problema":"No hay problema. (問題ない)","pregunta":"Tengo una pregunta. (質問があります)","palabra":"No sé esta palabra. (この単語を知らない)","color":"¿De qué color es? (何色?)","ropa":"Compro ropa nueva. (新しい服を買う)",
+"aprender":"Aprendo español. (スペイン語を学ぶ)","enseñar":"Ella enseña inglés. (彼女は英語を教える)","empezar":"La clase empieza a las nueve. (授業は9時に始まる)","terminar":"Termino el trabajo. (仕事を終える)","llegar":"Llego a las ocho. (8時に着く)","salir":"Salgo de casa. (家を出る)","entrar":"Entra, por favor. (どうぞ入って)","ayudar":"¿Puedes ayudarme? (手伝ってくれる?)","buscar":"Busco mi llave. (鍵を探している)","encontrar":"No encuentro mi móvil. (携帯が見つからない)",
+"esperar":"Espera un momento. (少し待って)","pagar":"Pago con tarjeta. (カードで払う)","costar":"¿Cuánto cuesta? (いくら?)","llamar":"Te llamo luego. (あとで電話する)","pensar":"Pienso en ti. (君のことを考える)","entender":"No entiendo. (分からない)","conocer":"Quiero conocer España. (スペインを知りたい)","jugar":"Juego al fútbol. (サッカーをする)","correr":"Corro por la mañana. (朝に走る)","caminar":"Camino al trabajo. (歩いて仕事へ行く)",
+"cocinar":"Cocino la cena. (夕食を作る)","cantar":"Me gusta cantar. (歌うのが好き)","bailar":"Bailamos en la fiesta. (パーティーで踊る)","volver":"Vuelvo a casa. (家に戻る)","llevar":"Llevo una chaqueta. (上着を着ている)","tomar":"Tomo un café. (コーヒーを飲む)","alto":"Él es muy alto. (彼はとても背が高い)","bajo":"La mesa es baja. (机は低い)","joven":"Ella es joven. (彼女は若い)","largo":"El río es largo. (川は長い)",
+"corto":"Tiene el pelo corto. (髪が短い)","limpio":"La casa está limpia. (家はきれいだ)","sucio":"El coche está sucio. (車は汚れている)","rico":"La comida está rica. (料理はおいしい)","contento":"Estoy contento. (うれしい)","triste":"Está triste. (悲しんでいる)","cansado":"Estoy muy cansado. (とても疲れた)","enfermo":"Estoy enfermo hoy. (今日は具合が悪い)","ocupado":"Estoy ocupado. (忙しい)","libre":"¿Estás libre hoy? (今日暇?)",
+"ahora":"Ahora estoy en casa. (今家にいる)","luego":"Hasta luego. (またあとで)","mucho":"Trabajo mucho. (たくさん働く)","poco":"Hablo un poco de español. (少しスペイン語を話す)","todo":"Todo está bien. (すべて順調)","nada":"No tengo nada. (何も持っていない)","bien":"Estoy bien. (元気です)","mal":"Me siento mal. (気分が悪い)","más":"Quiero más. (もっと欲しい)","aquí":"Vivo aquí. (ここに住んでいる)"
 };
 const ES_READINGS=[
  {passage:"Me llamo Ana y vivo en Madrid con mi familia. Mi padre es profesor y mi madre trabaja en un hospital. Tengo un hermano pequeño que se llama Luis. Los fines de semana comemos juntos y a veces vamos al parque. Me gusta mucho mi familia.",
@@ -1242,17 +1263,26 @@ const ES_QA_MODELS=[
  "En mi tiempo libre me gusta leer, escuchar música y pasear por el parque."
 ];
 
+const EN_STEPS=null;
+const ES_STEPS=[
+ {title:"1. あいさつ", cards:[["Hola","こんにちは"],["Buenos días","おはよう"],["Buenas tardes","こんにちは(午後)"],["Buenas noches","こんばんは・おやすみ"],["Gracias","ありがとう"],["De nada","どういたしまして"],["Por favor","お願いします"],["Adiós","さようなら"],["Sí","はい"],["No","いいえ"]]},
+ {title:"2. 数字 1〜10", cards:[["uno","1"],["dos","2"],["tres","3"],["cuatro","4"],["cinco","5"],["seis","6"],["siete","7"],["ocho","8"],["nueve","9"],["diez","10"]]},
+ {title:"3. 自己紹介の型", cards:[["Me llamo Ana","私はアナです"],["Soy de Japón","日本出身です"],["Tengo veinte años","20歳です"],["Mucho gusto","はじめまして"],["¿Cómo te llamas?","名前は?"],["Encantado","よろしく(男性)"]]},
+ {title:"4. かんたん動詞", cards:[["soy","私は〜だ(ser)"],["estoy","私は〜にいる(estar)"],["tengo","私は持っている(tener)"],["quiero","欲しい(querer)"],["me gusta","好き(gustar)"],["voy","行く(ir)"]]},
+ {title:"5. 短い文を読む", cards:[["Tengo un gato.","猫を飼っている"],["Me gusta el café.","コーヒーが好き"],["Vivo en Tokio.","東京に住んでいる"],["Hablo japonés.","日本語を話す"],["Hoy hace calor.","今日は暑い"],["Quiero agua.","水が欲しい"]]},
+ {title:"6. 短い会話を聞く", listen:true, cards:[["¿Cómo estás?","元気?"],["Muy bien, gracias.","とても元気、ありがとう"],["¿Qué quieres?","何がほしい?"],["Un café, por favor.","コーヒーください"],["¿Cuánto es?","いくら?"],["Son dos euros.","2ユーロです"]]}
+];
 const EN_VOCAB_EX={};
 const EN_WRITE_TIP="型: I agree/disagree that… → First,… → Second,… → In conclusion,… の順で書くと減点されにくい。理由には例(For example)を1つ添えると強い。";
 const EN_SPEAK_TIP="意見→理由→(例)の順。10秒考えてから話し始めると詰まりにくい。";
 const ES_WRITE_TIP="型: 「主語+動詞」で短く。Me llamo… / Soy de… / Me gusta… のように覚えた形をそのまま使う。まずは3〜5文でOK。";
 const ES_SPEAK_TIP="«Me gusta…», «Todos los días…», «El fin de semana pasado…» など覚えた表現をそのまま並べて話そう。";
 const COURSES={
- en:{ttsLang:"en-US", vocab:EN_VOCAB, vocabEx:EN_VOCAB_EX, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, writeTip:EN_WRITE_TIP, speakTip:EN_SPEAK_TIP, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
- es:{ttsLang:"es-ES", vocab:ES_VOCAB, vocabEx:ES_VOCAB_EX, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, writeTip:ES_WRITE_TIP, speakTip:ES_SPEAK_TIP, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
+ en:{ttsLang:"en-US", steps:EN_STEPS, vocab:EN_VOCAB, vocabEx:EN_VOCAB_EX, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, writeTip:EN_WRITE_TIP, speakTip:EN_SPEAK_TIP, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
+ es:{ttsLang:"es-ES", steps:ES_STEPS, vocab:ES_VOCAB, vocabEx:ES_VOCAB_EX, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, writeTip:ES_WRITE_TIP, speakTip:ES_SPEAK_TIP, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
 };
 function applyCourse(c){ const d=COURSES[c]||COURSES.en;
-  TTS_LANG=d.ttsLang; VOCAB=d.vocab; VOCAB_EX=d.vocabEx||{}; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint; WRITE_TIP=d.writeTip; SPEAK_TIP=d.speakTip;
+  TTS_LANG=d.ttsLang; STEPS=d.steps; VOCAB=d.vocab; VOCAB_EX=d.vocabEx||{}; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint; WRITE_TIP=d.writeTip; SPEAK_TIP=d.speakTip;
   NARRATIONS=d.narrations; NARR_MODELS=d.narrModels; QAS=d.qas; QA_MODELS=d.qaModels; READINGS=d.readings; LISTENINGS=d.listenings; MOCKQS=d.mockqs; }
 function relabelForCourse(){
   const wm=document.getElementById("writeMode");
@@ -1328,6 +1358,58 @@ function openReflection(){
   const v=prompt("今週いちばん強化したい技能は？\n(単語 / 読解 / リスニング / ライティング / スピーキング)","単語");
   if(!v)return; S.weak.unshift({d:today(),s:v.trim()}); S.weak=S.weak.slice(0,10); save();
   completeTask("rev"); renderWeak(); alert("記録しました!今日の『ふりかえり』が完了です。来週はそこを重点的に。"); }
+
+/* ========== ステップ学習(初心者) ========== */
+function speakText(text){ try{ const vo=getVoice(); speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang=TTS_LANG||"en-US"; if(vo)u.voice=vo; u.rate=0.85; speechSynthesis.speak(u);}catch(e){} }
+function renderSteps(){ const card=document.getElementById("stepCard"); if(!card)return;
+  if(!STEPS||!STEPS.length){ card.style.display="none"; return; }
+  card.style.display="block";
+  document.getElementById("stepList").innerHTML=STEPS.map((L,i)=>{
+    const done=S.steps&&S.steps[i]; const locked=i>0 && !(S.steps&&S.steps[i-1]);
+    return `<div class="task ${done?"done":""}" style="${locked?"opacity:.5;":""}" onclick="${locked?"":"openLesson("+i+")"}">
+      <div class="cb">${done?"✓":locked?"🔒":"▶"}</div>
+      <div style="flex:1"><div class="t-name">${L.title}</div><div class="t-time">${done?"クリア済み":locked?"前をクリアで開く":"タップして学ぶ"}</div></div></div>`;
+  }).join("");
+}
+let lessonState=null;
+function sayCard(i){ if(lessonState)speakText(STEPS[lessonState.idx].cards[i][0]); }
+function openLesson(idx){ if(!STEPS||!STEPS[idx])return;
+  if(idx>0 && !(S.steps&&S.steps[idx-1])){ alert("前のステップをクリアすると開きます。"); return; }
+  lessonState={idx, phase:"teach", ti:0, order:null, qpos:0, correct:0, pickK:null, curOpts:null};
+  document.getElementById("modal").style.display="flex"; renderLesson();
+  if(STEPS[idx].listen)setTimeout(()=>sayCard(0),400);
+}
+function renderLesson(){ const s=lessonState; const L=STEPS[s.idx];
+  let h=`<div class="modal-card"><div class="modal-head"><b>🎓 ${L.title}</b><span class="mclose" onclick="closeModal()">✕</span></div>`;
+  if(s.phase==="teach"){
+    const c=L.cards[s.ti];
+    h+=`<div class="vq-prompt"><div class="qword">${c[0]}</div><div class="spk" onclick="sayCard(${s.ti})">🔊 音を聞く</div><div class="qmean" style="margin-top:12px">${c[1]}</div></div>`;
+    h+=`<div class="center" style="color:var(--sub);font-size:12px;margin:6px 0">${s.ti+1} / ${L.cards.length}</div>`;
+    h+=`<button class="btn" style="width:100%" onclick="lessonNext()">${s.ti<L.cards.length-1?"次へ ▶":"かんたんクイズへ ▶"}</button>`;
+  } else {
+    if(!s.order){ s.order=L.cards.map((_,i)=>i).sort(()=>Math.random()-0.5); }
+    if(s.qpos>=s.order.length){
+      h+=`<div class="center"><p style="font-weight:800;margin:14px 0">クリア! ${s.correct}/${s.order.length} 正解 🎉</p><button class="btn green" style="width:100%" onclick="finishLesson()">完了する</button></div></div>`;
+      document.getElementById("modal").innerHTML=h; return;
+    }
+    const ci=s.order[s.qpos]; const c=L.cards[ci];
+    if(!s.curOpts){ const pool=L.cards.map((_,i)=>i).filter(i=>i!==ci).sort(()=>Math.random()-0.5); s.curOpts=[ci,pool[0],pool[1],pool[2]].filter(x=>x!=null).sort(()=>Math.random()-0.5); }
+    h+=`<div class="vq-prompt"><div class="qword">${c[0]}</div><div class="spk" onclick="sayCard(${ci})">🔊 もう一度</div></div>`;
+    h+=`<div class="center" style="color:var(--sub);font-size:12px;margin-bottom:6px">意味はどれ?</div>`;
+    h+=`<div class="vq-choices">`+s.curOpts.map((oi,k)=>{ let cls="vq-choice"; if(s.pickK!=null){ if(oi===ci)cls+=" correct"; else if(k===s.pickK)cls+=" wrong"; }
+      return `<div class="${cls}" onclick="lessonPick(${k},${oi},${ci})">${L.cards[oi][1]}</div>`; }).join("")+`</div>`;
+    if(s.pickK!=null) h+=`<div class="center" style="margin-top:10px"><button class="btn sm" onclick="lessonQNext()">次へ ▶</button></div>`;
+  }
+  h+=`</div>`; document.getElementById("modal").innerHTML=h;
+}
+function lessonNext(){ const s=lessonState; const L=STEPS[s.idx];
+  if(s.ti<L.cards.length-1){ s.ti++; renderLesson(); if(L.listen)setTimeout(()=>sayCard(s.ti),300); }
+  else { s.phase="quiz"; renderLesson(); if(L.listen)setTimeout(()=>sayCard(s.order[0]),300); } }
+function lessonPick(k,oi,ci){ const s=lessonState; if(s.pickK!=null)return; s.pickK=k; if(oi===ci){s.correct++; beep(760,.05);} else beep(300,.08); vibe(8); renderLesson(); }
+function lessonQNext(){ const s=lessonState; s.qpos++; s.pickK=null; s.curOpts=null; renderLesson();
+  const L=STEPS[s.idx]; if(L.listen && s.qpos<s.order.length)setTimeout(()=>sayCard(s.order[s.qpos]),300); }
+function finishLesson(){ const s=lessonState; const first=!(S.steps&&S.steps[s.idx]); S.steps=S.steps||{}; S.steps[s.idx]=1; save();
+  closeModal(); confetti(60); beep(880,.1); if(first)addXP(15,null); completeTask("v"); goTab("home"); }
 
 /* ========== リマインド ========== */
 function renderRemStatus(){ const el=document.getElementById("remStatus"); let s="";
