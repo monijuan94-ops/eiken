@@ -387,7 +387,7 @@
 /* ========== コース(言語) ========== */
 let COURSE = localStorage.getItem("app_course")||"en";
 let LS_KEY = (COURSE==="es") ? "eiken_es_v1" : "eiken_p1_v3";
-let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG,VOCAB_EX,WRITE_TIP,SPEAK_TIP,STEPS;
+let VOCAB,ESSAYS,ESSAY_MODELS,SUMMARY_NOTE,SUMMARY_MODEL,ESSAY_HINT,NARRATIONS,NARR_MODELS,QAS,QA_MODELS,READINGS,LISTENINGS,MOCKQS,TTS_LANG,VOCAB_EX,WRITE_TIP,SPEAK_TIP,STEPS,READINGS_EASY,LISTENINGS_EASY;
 function switchCourse(c){ if(c===COURSE)return; localStorage.setItem("app_course",c); location.reload(); }
 
 /* ========== ストレージ ========== */
@@ -1263,6 +1263,39 @@ const ES_QA_MODELS=[
  "En mi tiempo libre me gusta leer, escuchar música y pasear por el parque."
 ];
 
+/* ===== やさしい難易度 ===== */
+const EN_READINGS_EASY=[
+ {passage:"Tom gets up at six every morning. He walks his dog before breakfast.",q:[{q:"When does Tom walk his dog?",choices:["Before breakfast","After dinner","At night","At noon"],a:0,exp:"«before breakfast»=朝食の前。"}]},
+ {passage:"The library is open from nine to five. It is closed on Sundays.",q:[{q:"When is the library closed?",choices:["On Sundays","On Mondays","Every evening","At noon"],a:0,exp:"«closed on Sundays»=日曜は休み。"}]},
+ {passage:"Mary likes tea, but she does not like coffee. She drinks tea every day.",q:[{q:"What does Mary drink every day?",choices:["Tea","Coffee","Milk","Water"],a:0,exp:"«drinks tea every day»=毎日お茶を飲む。"}]},
+ {passage:"It is raining today, so we will stay home and watch a movie.",q:[{q:"Why will they stay home?",choices:["Because it is raining","Because it is hot","Because they are sick","Because it is a holiday"],a:0,exp:"«It is raining»=雨だから。"}]},
+ {passage:"The train to the airport leaves at ten. Please arrive ten minutes early.",q:[{q:"What time does the train leave?",choices:["At ten","At nine","At noon","At eight"],a:0,exp:"«leaves at ten»=10時発。"}]},
+ {passage:"Ken studies English for thirty minutes every night before he goes to bed.",q:[{q:"How long does Ken study each night?",choices:["Thirty minutes","One hour","Ten minutes","All night"],a:0,exp:"«thirty minutes»=30分。"}]}
+];
+const EN_LISTENINGS_EASY=[
+ {script:"Hello. The store will close in ten minutes. Please bring your items to the counter.",q:[{q:"When will the store close?",choices:["In ten minutes","In one hour","Tomorrow","Right now"],a:0,exp:"«close in ten minutes»=あと10分で閉店。"}]},
+ {script:"Good morning. Today will be sunny and warm. Enjoy your day!",q:[{q:"What will the weather be like?",choices:["Sunny and warm","Cold and rainy","Windy","Snowy"],a:0,exp:"«sunny and warm»=晴れて暖かい。"}]},
+ {script:"A: Would you like tea or coffee? B: Coffee, please.",q:[{q:"What does the person want?",choices:["Coffee","Tea","Water","Juice"],a:0,exp:"«Coffee, please»=コーヒーをお願い。"}]},
+ {script:"The next bus to the station leaves at three o'clock from platform two.",q:[{q:"Where does the bus leave from?",choices:["Platform two","Platform one","The airport","The station"],a:0,exp:"«from platform two»=2番のりばから。"}]},
+ {script:"Remember, the meeting is tomorrow at nine in Room 5.",q:[{q:"Where is the meeting?",choices:["Room 5","Room 9","The office","Online"],a:0,exp:"«in Room 5»=5号室で。"}]},
+ {script:"A: How much is this shirt? B: It's fifteen dollars.",q:[{q:"How much is the shirt?",choices:["Fifteen dollars","Fifty dollars","Five dollars","Thirteen dollars"],a:0,exp:"«fifteen dollars»=15ドル。"}]}
+];
+const ES_READINGS_EASY=[
+ {passage:"Me llamo Ana. Soy de España.",q:[{q:"アナはどこの出身?",choices:["スペイン","日本","メキシコ","フランス"],a:0,exp:"«Soy de España»=スペイン出身。"}]},
+ {passage:"Tengo un gato. Es blanco.",q:[{q:"アナが飼っているのは?",choices:["猫","犬","鳥","魚"],a:0,exp:"«un gato»=猫。blanco=白い。"}]},
+ {passage:"Me gusta el café. No me gusta el té.",q:[{q:"好きな飲み物は?",choices:["コーヒー","お茶","水","牛乳"],a:0,exp:"«Me gusta el café»=コーヒーが好き。"}]},
+ {passage:"Hoy hace calor. Vamos a la playa.",q:[{q:"今日の天気は?",choices:["暑い","寒い","雨","雪"],a:0,exp:"«hace calor»=暑い。"}]},
+ {passage:"Estudio español todos los días.",q:[{q:"毎日勉強しているのは?",choices:["スペイン語","英語","数学","音楽"],a:0,exp:"«Estudio español»=スペイン語を勉強する。"}]},
+ {passage:"Mi casa es pequeña, pero bonita.",q:[{q:"家はどんな?",choices:["小さいがきれい","大きい","古い","汚い"],a:0,exp:"«pequeña, pero bonita»=小さいけどきれい。"}]}
+];
+const ES_LISTENINGS_EASY=[
+ {script:"Hola, buenos días.",q:[{q:"何と言っている?",choices:["おはよう","おやすみ","さようなら","ありがとう"],a:0,exp:"«buenos días»=おはよう。"}]},
+ {script:"Quiero un café, por favor.",q:[{q:"何がほしい?",choices:["コーヒー","お茶","水","パン"],a:0,exp:"«un café»=コーヒー。"}]},
+ {script:"Muchas gracias. De nada.",q:[{q:"2人目の返事は?",choices:["どういたしまして","ありがとう","こんにちは","さようなら"],a:0,exp:"«De nada»=どういたしまして。"}]},
+ {script:"¿Qué hora es? Son las tres.",q:[{q:"今何時?",choices:["3時","2時","4時","5時"],a:0,exp:"«las tres»=3時。"}]},
+ {script:"Hola, me llamo Carlos.",q:[{q:"名前は?",choices:["カルロス","アナ","マリア","ルイス"],a:0,exp:"«me llamo Carlos»=名前はカルロス。"}]},
+ {script:"¿Cuánto es? Son cinco euros.",q:[{q:"値段は?",choices:["5ユーロ","3ユーロ","15ユーロ","50ユーロ"],a:0,exp:"«cinco euros»=5ユーロ。"}]}
+];
 const EN_STEPS=null;
 const ES_STEPS=[
  {title:"1. あいさつ", cards:[["Hola","こんにちは"],["Buenos días","おはよう"],["Buenas tardes","こんにちは(午後)"],["Buenas noches","こんばんは・おやすみ"],["Gracias","ありがとう"],["De nada","どういたしまして"],["Por favor","お願いします"],["Adiós","さようなら"],["Sí","はい"],["No","いいえ"]]},
@@ -1278,12 +1311,12 @@ const EN_SPEAK_TIP="意見→理由→(例)の順。10秒考えてから話し�
 const ES_WRITE_TIP="型: 「主語+動詞」で短く。Me llamo… / Soy de… / Me gusta… のように覚えた形をそのまま使う。まずは3〜5文でOK。";
 const ES_SPEAK_TIP="«Me gusta…», «Todos los días…», «El fin de semana pasado…» など覚えた表現をそのまま並べて話そう。";
 const COURSES={
- en:{ttsLang:"en-US", steps:EN_STEPS, vocab:EN_VOCAB, vocabEx:EN_VOCAB_EX, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, writeTip:EN_WRITE_TIP, speakTip:EN_SPEAK_TIP, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS},
- es:{ttsLang:"es-ES", steps:ES_STEPS, vocab:ES_VOCAB, vocabEx:ES_VOCAB_EX, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, writeTip:ES_WRITE_TIP, speakTip:ES_SPEAK_TIP, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS}
+ en:{ttsLang:"en-US", steps:EN_STEPS, vocab:EN_VOCAB, vocabEx:EN_VOCAB_EX, essays:EN_ESSAYS, essayModels:EN_ESSAY_MODELS, summaryNote:EN_SUMMARY_NOTE, summaryModel:EN_SUMMARY_MODEL, essayHint:EN_ESSAY_HINT, writeTip:EN_WRITE_TIP, speakTip:EN_SPEAK_TIP, narrations:EN_NARRATIONS, narrModels:EN_NARR_MODELS, qas:EN_QAS, qaModels:EN_QA_MODELS, readings:EN_READINGS, listenings:EN_LISTENINGS, mockqs:EN_MOCKQS, readingsEasy:EN_READINGS_EASY, listeningsEasy:EN_LISTENINGS_EASY},
+ es:{ttsLang:"es-ES", steps:ES_STEPS, vocab:ES_VOCAB, vocabEx:ES_VOCAB_EX, essays:ES_ESSAYS, essayModels:ES_ESSAY_MODELS, summaryNote:ES_SUMMARY_NOTE, summaryModel:ES_SUMMARY_MODEL, essayHint:ES_ESSAY_HINT, writeTip:ES_WRITE_TIP, speakTip:ES_SPEAK_TIP, narrations:ES_NARRATIONS, narrModels:ES_NARR_MODELS, qas:ES_QAS, qaModels:ES_QA_MODELS, readings:ES_READINGS, listenings:ES_LISTENINGS, mockqs:ES_MOCKQS, readingsEasy:ES_READINGS_EASY, listeningsEasy:ES_LISTENINGS_EASY}
 };
 function applyCourse(c){ const d=COURSES[c]||COURSES.en;
   TTS_LANG=d.ttsLang; STEPS=d.steps; VOCAB=d.vocab; VOCAB_EX=d.vocabEx||{}; ESSAYS=d.essays; ESSAY_MODELS=d.essayModels; SUMMARY_NOTE=d.summaryNote; SUMMARY_MODEL=d.summaryModel; ESSAY_HINT=d.essayHint; WRITE_TIP=d.writeTip; SPEAK_TIP=d.speakTip;
-  NARRATIONS=d.narrations; NARR_MODELS=d.narrModels; QAS=d.qas; QA_MODELS=d.qaModels; READINGS=d.readings; LISTENINGS=d.listenings; MOCKQS=d.mockqs; }
+  NARRATIONS=d.narrations; NARR_MODELS=d.narrModels; QAS=d.qas; QA_MODELS=d.qaModels; READINGS=d.readings; LISTENINGS=d.listenings; MOCKQS=d.mockqs; READINGS_EASY=d.readingsEasy; LISTENINGS_EASY=d.listeningsEasy; }
 function relabelForCourse(){
   const wm=document.getElementById("writeMode");
   if(wm){ if(COURSE==="es"){ wm.options[0].text="作文(自由・タイマー20分)"; wm.options[1].text="短い作文(日記・10分)"; } }
@@ -1294,11 +1327,26 @@ function relabelForCourse(){
 /* ========== 演習エンジン(モーダル) ========== */
 let quizState=null;
 function openPractice(kind){
+  if(kind==="reading"||kind==="listening"){
+    const easy = kind==="reading" ? READINGS_EASY : LISTENINGS_EASY;
+    if(easy && easy.length){ showLevelChooser(kind); return; }
+  }
+  startQuiz(kind,"normal");
+}
+function showLevelChooser(kind){
+  document.getElementById("modal").style.display="flex";
+  const label=kind==="reading"?"読解":"リスニング";
+  document.getElementById("modal").innerHTML=`<div class="modal-card"><div class="modal-head"><b>${label} — レベルを選ぶ</b><span class="mclose" onclick="closeModal()">✕</span></div>
+    <button class="btn" style="width:100%;margin-bottom:10px;font-size:16px;padding:14px" onclick="startQuiz('${kind}','easy')">🌱 やさしい（短い1文〜）</button>
+    <button class="btn ghost" style="width:100%;font-size:16px;padding:14px" onclick="startQuiz('${kind}','normal')">📖 ふつう（本番に近い）</button>
+    <p style="font-size:12px;color:var(--sub);margin-top:10px;line-height:1.6">まずは「やさしい」から。慣れてきたら「ふつう」に挑戦しよう。</p></div>`;
+}
+function startQuiz(kind,level){
   let ctx=null, qs=[];
-  if(kind==="reading"){ const p=READINGS[Math.floor(Math.random()*READINGS.length)]; ctx={type:"text",text:p.passage}; qs=p.q; }
-  else if(kind==="listening"){ const p=LISTENINGS[Math.floor(Math.random()*LISTENINGS.length)]; ctx={type:"audio",text:p.script}; qs=p.q; }
+  if(kind==="reading"){ const arr=(level==="easy"&&READINGS_EASY&&READINGS_EASY.length)?READINGS_EASY:READINGS; const p=arr[Math.floor(Math.random()*arr.length)]; ctx={type:"text",text:p.passage}; qs=p.q; }
+  else if(kind==="listening"){ const arr=(level==="easy"&&LISTENINGS_EASY&&LISTENINGS_EASY.length)?LISTENINGS_EASY:LISTENINGS; const p=arr[Math.floor(Math.random()*arr.length)]; ctx={type:"audio",text:p.script}; qs=p.q; }
   else { qs=[...MOCKQS].sort(()=>Math.random()-0.5).slice(0,5); }
-  quizState={kind,qs,ctx,answered:0,correct:0,picked:{},showScript:false};
+  quizState={kind,qs,ctx,answered:0,correct:0,picked:{},showScript:false,level};
   document.getElementById("modal").style.display="flex";
   renderQuiz();
   if(kind==="listening")setTimeout(()=>speakScript(ctx.text),400);
